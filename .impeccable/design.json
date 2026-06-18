@@ -1,0 +1,120 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-17T14:07:45Z",
+  "title": "Design System: PRET-A-CL",
+  "extensions": {
+    "colorMeta": {
+      "ink": { "role": "primary", "displayName": "Ink", "canonical": "oklch(8% 0 0)", "tonalRamp": ["#0a0a0a", "#1a1a1a", "#2e2e2e", "#454545", "#5e5e5e", "#7a7a7a", "#9a9a9a", "#c4c4c4"] },
+      "paper": { "role": "neutral", "displayName": "Paper", "canonical": "oklch(100% 0 0)", "tonalRamp": ["#0a0a0a", "#2e2e2e", "#555555", "#7d7d7d", "#a6a6a6", "#cfcfcf", "#ebebeb", "#ffffff"] },
+      "ink-soft": { "role": "neutral", "displayName": "Ink Soft", "canonical": "oklch(45% 0 0)", "tonalRamp": ["#1a1a1a", "#2e2e2e", "#454545", "#5e5e5e", "#666666", "#7a7a7a", "#9a9a9a", "#c4c4c4"] },
+      "ink-muted": { "role": "neutral", "displayName": "Ink Muted", "canonical": "oklch(47% 0.005 280)", "tonalRamp": ["#1c1c1f", "#303034", "#46464a", "#5d5d62", "#6a6a72", "#86868c", "#a8a8ae", "#cfcfd3"] },
+      "hairline": { "role": "neutral", "displayName": "Hairline", "canonical": "rgba(0,0,0,0.14)" },
+      "hairline-strong": { "role": "neutral", "displayName": "Hairline Strong", "canonical": "rgba(0,0,0,0.30)" },
+      "tile-grey": { "role": "neutral", "displayName": "Tile Grey", "canonical": "oklch(91% 0 0)", "tonalRamp": ["#2a2a2a", "#454545", "#5e5e5e", "#7a7a7a", "#9a9a9a", "#c4c4c4", "#dcdcda", "#e8e8e6"] },
+      "tile-grey-soft": { "role": "neutral", "displayName": "Tile Grey Soft", "canonical": "oklch(93% 0 0)", "tonalRamp": ["#2c2c2c", "#474747", "#606060", "#7c7c7c", "#9c9c9c", "#c6c6c8", "#dedee0", "#ececef"] },
+      "canvas-grey": { "role": "neutral", "displayName": "Canvas Grey", "canonical": "oklch(95% 0.002 100)", "tonalRamp": ["#2c2c2b", "#474746", "#60605f", "#7c7c7a", "#9c9c9a", "#c6c6c4", "#dedede", "#f4f4f2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Globe home hero wordmark only; appears once per session." },
+      "headline": { "displayName": "Headline", "purpose": "Brand name in Product detail view." },
+      "title": { "displayName": "Title", "purpose": "Product name in Product detail view; category labels." },
+      "body": { "displayName": "Body", "purpose": "Brand history, intro copy, price text." },
+      "label": { "displayName": "Label", "purpose": "All UI chrome: buttons, captions, eyebrows, nav, ticker." }
+    },
+    "shadows": [
+      { "name": "overlay-lift", "value": "0 12px 32px rgba(0,0,0,0.18)", "purpose": "Soft ambient lift for floating, edge-free panels (globe hover-preview card and similar future popovers). Paired with backdrop-filter: blur(12px). Never used on buttons, chips, or tiles." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "ease-out", "purpose": "Default hover/transform transitions (150-200ms) across buttons, chips, tiles." },
+      { "name": "ease-overlay", "value": "cubic-bezier(.22,.61,.36,1)", "purpose": "Overlay entrance (fade-up, scale-in) for Lookbook, Product, and Category Lookbook panels, 280-420ms." },
+      { "name": "ease-ticker", "value": "linear", "purpose": "Brand ticker infinite scroll, 28s loop." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary CTA Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main call-to-action: opens lookbook, confirms filtered view, links out to brand store purchase.",
+      "html": "<button class=\"ds-btn-primary\">LOOKBOOK COMPLETO →</button>",
+      "css": ".ds-btn-primary { background: #0a0a0a; color: #ffffff; border: none; padding: 14px 32px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: transform 150ms ease, opacity 150ms ease; } .ds-btn-primary:hover { opacity: 0.86; } .ds-btn-primary:active { transform: scale(0.96); } .ds-btn-primary:focus-visible { outline: 2px solid #0a0a0a; outline-offset: 3px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action: clear filters, wishlist, close overlay. Inverts fully to ink on hover.",
+      "html": "<button class=\"ds-btn-ghost\">LIMPIAR ✕</button>",
+      "css": ".ds-btn-ghost { background: #ffffff; color: #0a0a0a; border: 1px solid rgba(0,0,0,0.30); padding: 12px 16px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; transition: background-color 150ms ease, color 150ms ease, transform 150ms ease; } .ds-btn-ghost:hover { background: #0a0a0a; color: #ffffff; } .ds-btn-ghost:active { transform: scale(0.96); } .ds-btn-ghost:focus-visible { outline: 2px solid #0a0a0a; outline-offset: 3px; }"
+    },
+    {
+      "name": "Close Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Dismiss control for every full-screen overlay (Lookbook, Product, Category Lookbook).",
+      "html": "<button class=\"ds-btn-close\" aria-label=\"Cerrar\">✕</button>",
+      "css": ".ds-btn-close { width: 40px; height: 40px; border: 1px solid #000000; background: #ffffff; color: #0a0a0a; font-size: 16px; font-weight: 700; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; cursor: pointer; transition: background-color 150ms ease, color 150ms ease, transform 150ms ease; } .ds-btn-close:hover { background: #0a0a0a; color: #ffffff; } .ds-btn-close:active { transform: scale(0.9); }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-filter",
+      "description": "Multi-select category filter on the Globe home screen. Shows a checkbox glyph, zero-padded count, and label.",
+      "html": "<button class=\"ds-chip\"><span class=\"ds-chip-check\"></span><span class=\"ds-chip-count\">04</span><span class=\"ds-chip-label\">SUPERIOR</span></button>",
+      "css": ".ds-chip { all: unset; display: flex; align-items: center; gap: 14px; padding: 12px 18px; border: 1px solid rgba(0,0,0,0.22); background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); cursor: pointer; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease; } .ds-chip:hover { border-color: #000; } .ds-chip:active { transform: scale(0.97); } .ds-chip-check { width: 16px; height: 16px; border: 1px solid rgba(0,0,0,0.5); display: inline-flex; flex-shrink: 0; } .ds-chip-count { font-size: 11px; font-weight: 500; color: #6a6a72; width: 28px; } .ds-chip-label { font-weight: 700; font-size: 18px; letter-spacing: 0.5px; text-transform: uppercase; color: #0a0a0a; } .ds-chip.is-active { background: #0a0a0a; border-color: #000; } .ds-chip.is-active .ds-chip-check { background: #fff; border-color: #fff; } .ds-chip.is-active .ds-chip-count { color: #aaaaaa; } .ds-chip.is-active .ds-chip-label { color: #ffffff; }"
+    },
+    {
+      "name": "Product Tile",
+      "kind": "card",
+      "refersTo": "tile-product",
+      "description": "Drag-grid tile showing a product photo with an uppercase name/price caption bar over the bottom edge.",
+      "html": "<div class=\"ds-tile\"><img class=\"ds-tile-img\" src=\"\" alt=\"\" /><div class=\"ds-tile-caption\"><span class=\"ds-tile-name\">TOP BRU</span><span class=\"ds-tile-price\">$53.000</span></div></div>",
+      "css": ".ds-tile { position: relative; background: #e8e8e6; overflow: hidden; width: 230px; height: 320px; } .ds-tile-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 320ms cubic-bezier(.22,.61,.36,1); } .ds-tile:hover .ds-tile-img { transform: scale(1.06); } .ds-tile-caption { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.92); padding: 7px 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; } .ds-tile-name { font-weight: 700; font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-tile-price { font-weight: 500; font-size: 9px; letter-spacing: 0.5px; color: #666666; white-space: nowrap; text-transform: uppercase; }"
+    },
+    {
+      "name": "Brand Ticker",
+      "kind": "nav",
+      "description": "Auto-scrolling marquee of all brand names; the only persistent navigation element on the Globe home screen.",
+      "html": "<div class=\"ds-ticker\"><div class=\"ds-ticker-track\"><span class=\"ds-ticker-item\">LA MARTIC<span class=\"ds-ticker-dot\">◆</span></span><span class=\"ds-ticker-item\">DE GOYA STGO<span class=\"ds-ticker-dot\">◆</span></span></div></div>",
+      "css": ".ds-ticker { width: 100%; height: 44px; background: #0a0a0a; overflow: hidden; display: flex; align-items: center; } .ds-ticker-track { display: flex; white-space: nowrap; will-change: transform; animation: ds-ticker-scroll 28s linear infinite; } .ds-ticker-item { display: inline-flex; align-items: center; padding-right: 48px; font-size: 10.5px; font-weight: 700; letter-spacing: 3.5px; text-transform: uppercase; color: #ffffff; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; flex-shrink: 0; } .ds-ticker-dot { margin-left: 48px; color: rgba(255,255,255,0.25); font-size: 7px; } @keyframes ds-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }"
+    },
+    {
+      "name": "Hover Preview Card",
+      "kind": "custom",
+      "description": "The one floating, edge-free panel in the system; appears beside the globe on spike hover. Sole user of Overlay Lift shadow.",
+      "html": "<div class=\"ds-hover-card\"><div class=\"ds-hover-card-img\"><img src=\"\" alt=\"\" /></div><div class=\"ds-hover-card-body\"><div class=\"ds-hover-card-brand\">LA MARTIC</div><div class=\"ds-hover-card-name\">TOP BRU</div><div class=\"ds-hover-card-price\">$53.000</div></div></div>",
+      "css": ".ds-hover-card { width: 250px; background: rgba(255,255,255,0.96); border: 1px solid rgba(0,0,0,0.14); backdrop-filter: blur(12px); box-shadow: 0 12px 32px rgba(0,0,0,0.18); font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; } .ds-hover-card-img { width: 100%; height: 280px; overflow: hidden; background: #ececef; } .ds-hover-card-img img { width: 100%; height: 100%; object-fit: cover; display: block; } .ds-hover-card-body { padding: 14px 16px; border-top: 1px solid rgba(0,0,0,0.1); } .ds-hover-card-brand { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: #6a6a72; margin-bottom: 5px; } .ds-hover-card-name { font-size: 13px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; line-height: 1.3; margin-bottom: 8px; } .ds-hover-card-price { font-size: 14px; font-weight: 500; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Manifesto Wall",
+    "overview": "PRET-A-CL reads like a black-on-white protest poster, not a storefront: declarative all-caps Helvetica, hairline rules instead of cards, and a globe of black spikes standing in for a product catalogue. The system rejects every retail tell — no sale badges, no rounded pill buttons, no carousels, no pastel softening — because the brand line is explicit: \"NO ES RETAIL. ES CULTO.\" Density is generous (large display type, wide negative space at the globe home) but tightens hard once the user commits to a category or product, where information is delivered as a dense, declarative dossier (brand meta, history, price, single CTA). Depth comes from contrast and hairlines, never from shadow-as-decoration. Motion is restrained and physical — drag-inertia grids, easing curves, no bounce — reinforcing that this is a tool for browsing, not a marketing animation reel.",
+    "keyCharacteristics": [
+      "Pure black ink (#0a0a0a) on pure white paper (#ffffff); no tinted neutrals, no warm cream",
+      "Single typeface (Helvetica Neue) carries the entire system — no display/body pairing",
+      "Zero border-radius by default; the rare 2px on lookbook tiles is the only softening in the system",
+      "Flat by default; the one allowed elevation is a soft lift on floating overlay panels (hover card, hint), never on buttons or tiles",
+      "All interactive labels are uppercase and letter-spaced — there is no sentence-case UI copy"
+    ],
+    "rules": [
+      { "name": "The Two-Ink Rule", "body": "The palette is ink and paper. Any third color is a placeholder-grey for unloaded imagery, never a decorative accent. If a screen needs a third brand color, that's a sign the screen has drifted off-system.", "section": "colors" },
+      { "name": "The All-Caps Chrome Rule", "body": "Anything that is UI scaffolding rather than content (buttons, captions, eyebrows, nav labels) is uppercase and letter-spaced. Sentence case is reserved for nothing in this system — even body copy is uppercase.", "section": "typography" },
+      { "name": "The Flat-Unless-Floating Rule", "body": "If a surface touches the edge of its container (full-bleed overlays, tiles in a grid, buttons in a row), it is flat. If it floats free over other content with no container edge, it gets Overlay Lift. There is no third state.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the palette to ink (#0a0a0a) and paper (#ffffff), with grey reserved for unloaded-image placeholders only (Tile Grey #e8e8e6, Tile Grey Soft #ececef, Canvas Grey #f4f4f2).",
+      "Do set every UI chrome string (buttons, captions, eyebrows, nav labels) in uppercase with letter-spacing — this is the Label role and it is the most-used type role in the system.",
+      "Do use 0px border-radius on every button, chip, and grid tile; the 2px tile radius in Category Lookbook is the sole sanctioned exception.",
+      "Do invert ink/paper fully on hover for ghost buttons and active chips rather than introducing a tint or accent color.",
+      "Do reserve Overlay Lift (0 12px 32px rgba(0,0,0,0.18) + blur) for floating, edge-free panels only (the globe hover card and similar future popovers)."
+    ],
+    "donts": [
+      "Don't build anything that reads as generic e-commerce — no product cards with sale badges, no carousels, no banner promos, no star ratings.",
+      "Don't introduce corporate SaaS-cream minimalism — no pastel or cream backgrounds, no gradient-text headlines, no rounded pill buttons.",
+      "Don't add shadows to buttons, chips, or grid tiles. Flat-by-default applies everywhere except genuinely floating overlay content.",
+      "Don't introduce a second typeface. Helvetica Neue carries display through label.",
+      "Don't simulate checkout inside PRET-A-CL. Every purchase path is an outbound link to the brand's own store."
+    ]
+  }
+}

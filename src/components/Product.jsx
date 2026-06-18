@@ -1,0 +1,279 @@
+import { useRef, useState, useEffect } from 'react'
+import { BRANDS, PRODUCTS } from '../data'
+import { T, S } from '../tokens'
+import { cdnResize } from '../imgUtil'
+
+export default function Product({ product }) {
+  const p = product || PRODUCTS[5]
+  const b = BRANDS[p.brand]
+  const photos = [p.img, p.img2, p.img, p.img2].filter(Boolean)
+  const soldOut = p.price === 'AGOTADO'
+
+  const scrollRef = useRef(null)
+  const dragRef = useRef(null)
+  const [revealed, setRevealed] = useState(() => new Set([0]))
+
+  useEffect(() => {
+    const root = scrollRef.current
+    if (!root || typeof IntersectionObserver === 'undefined') return
+    const els = root.querySelectorAll('[data-photo-idx]')
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (en.isIntersecting) {
+          const i = +en.target.dataset.photoIdx
+          setRevealed((cur) => (cur.has(i) ? cur : new Set(cur).add(i)))
+        }
+      })
+    }, { root, threshold: 0.35 })
+    els.forEach((el) => obs.observe(el))
+    return () => obs.disconnect()
+  }, [photos.length])
+
+  const onDown = (e) => {
+    dragRef.current = { y: e.clientY, top: scrollRef.current.scrollTop }
+    scrollRef.current.style.cursor = 'grabbing'
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch (_) {}
+  }
+  const onMove = (e) => {
+    if (!dragRef.current) return
+    scrollRef.current.scrollTop = dragRef.current.top - (e.clientY - dragRef.current.y)
+  }
+  const onUp = () => {
+    dragRef.current = null
+    if (scrollRef.current) scrollRef.current.style.cursor = 'grab'
+  }
+
+  return (
+    <div className="pac-viewport pac-product-grid" style={{
+      overflow: 'hidden',
+      fontFamily: T.font,
+      fontWeight: 700,
+      color: T.ink,
+      background: T.paper,
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr 1fr',
+    }}>
+      {/* COL 1 — brand info */}
+      <div className="pac-product-col" style={{
+        borderRight: `1px solid ${T.hair}`,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 48px',
+        textAlign: 'center',
+        animation: 'pac-fade-up 420ms cubic-bezier(.22,.61,.36,1) 0ms backwards',
+      }}>
+        <div style={{
+          fontSize: 10,
+          fontWeight: 500,
+          letterSpacing: 1.5,
+          color: T.ink2,
+          textTransform: 'uppercase',
+          marginBottom: S.sm,
+        }}>
+          MARCA
+        </div>
+
+        <div className="pac-product-brand" style={{
+          fontSize: 44,
+          letterSpacing: -1,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          lineHeight: 0.95,
+        }}>
+          {b.name}
+        </div>
+
+        <div style={{
+          fontSize: 10,
+          fontWeight: 500,
+          letterSpacing: 1,
+          color: T.ink2,
+          textTransform: 'uppercase',
+          marginTop: 10,
+        }}>
+          {b.meta}
+        </div>
+
+        <div style={{
+          marginTop: S.lg,
+          fontSize: 13,
+          lineHeight: 1.4,
+          letterSpacing: 0.2,
+          textTransform: 'uppercase',
+          maxWidth: 320,
+        }}>
+          {b.vision}
+        </div>
+
+        <div style={{
+          marginTop: S.md,
+          fontSize: 13,
+          fontWeight: 500,
+          lineHeight: 1.6,
+          color: T.ink2,
+          maxWidth: 340,
+          letterSpacing: 0.3,
+        }}>
+          {b.history}
+        </div>
+
+        <div style={{
+          marginTop: 26,
+          fontSize: 10,
+          letterSpacing: 1.5,
+          textTransform: 'uppercase',
+          textDecoration: 'underline',
+          textUnderlineOffset: 4,
+          cursor: 'pointer',
+        }}>
+          <a href={b.url} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'inherit' }}>
+            VER PERFIL DE LA MARCA →
+          </a>
+        </div>
+      </div>
+
+      {/* COL 2 — vertical photo gallery, scroll/drag */}
+      <div className="pac-product-col" style={{
+        borderRight: `1px solid ${T.hair}`,
+        position: 'relative',
+        overflow: 'hidden',
+        animation: 'pac-fade-up 420ms cubic-bezier(.22,.61,.36,1) 70ms backwards',
+      }}>
+        <div
+          ref={scrollRef}
+          onPointerDown={onDown}
+          onPointerMove={onMove}
+          onPointerUp={onUp}
+          onPointerCancel={onUp}
+          style={{
+            height: '100%',
+            overflowY: 'auto',
+            cursor: 'grab',
+            padding: S.lg,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 20,
+          }}
+        >
+          {photos.map((src, i) => (
+            <div
+              key={i}
+              data-photo-idx={i}
+              className="pac-product-photo"
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: 560,
+                flex: 'none',
+                background: '#e8e8e6',
+                overflow: 'hidden',
+                opacity: revealed.has(i) ? 1 : 0,
+                transform: revealed.has(i) ? 'translateY(0) scale(1)' : 'translateY(18px) scale(0.985)',
+                transition: 'opacity 480ms cubic-bezier(.22,.61,.36,1), transform 480ms cubic-bezier(.22,.61,.36,1)',
+              }}
+            >
+              <img
+                src={cdnResize(src, 960)}
+                alt={`${p.name} ${i + 1}`}
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+                onError={(e) => { e.currentTarget.style.display = 'none' }}
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  userSelect: 'none',
+                }}
+              />
+              <div style={{
+                position: 'absolute',
+                top: 10,
+                left: 12,
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: 1,
+                background: 'rgba(255,255,255,0.9)',
+                padding: '3px 8px',
+              }}>
+                0{i + 1}/0{photos.length}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* COL 3 — purchase info */}
+      <div className="pac-product-col" style={{
+        padding: S.lg,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        animation: 'pac-fade-up 420ms cubic-bezier(.22,.61,.36,1) 140ms backwards',
+      }}>
+        <div className="pac-product-name" style={{
+          fontSize: 34,
+          letterSpacing: -0.5,
+          lineHeight: 1,
+          textTransform: 'uppercase',
+        }}>
+          {p.name}
+        </div>
+
+        <div style={{
+          fontSize: 22,
+          marginTop: 16,
+          textTransform: 'uppercase',
+          letterSpacing: 0,
+          color: soldOut ? T.ink2 : T.ink,
+        }}>
+          {soldOut ? 'AGOTADO' : `${p.price} CLP`}
+        </div>
+
+        <a
+          href={p.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ textDecoration: 'none', marginTop: S.lg }}
+        >
+          <button className="pac-cta" style={{
+            width: '100%',
+            padding: '18px',
+            background: T.ink,
+            color: T.paper,
+            border: `1px solid ${T.hair}`,
+            fontFamily: T.font,
+            fontWeight: 700,
+            fontSize: 13,
+            letterSpacing: 2,
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+          }}>
+            {soldOut ? `VER EN ${b.store} ↗` : `COMPRAR EN ${b.store} ↗`}
+          </button>
+        </a>
+
+        <button className="pac-wishlist" style={{
+          width: '100%',
+          marginTop: S.xs,
+          padding: `${S.sm}px`,
+          background: T.paper,
+          color: T.ink,
+          border: `1px solid ${T.hairStrong}`,
+          fontFamily: T.font,
+          fontWeight: 700,
+          fontSize: 13,
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+          cursor: 'pointer',
+        }}>
+          ♡ WISHLIST
+        </button>
+      </div>
+    </div>
+  )
+}
