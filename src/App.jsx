@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import Globe from './components/Globe'
-import Lookbook from './components/Lookbook'
-import Product from './components/Product'
 import { T } from './tokens'
+
+const Lookbook = lazy(() => import('./components/Lookbook'))
+const Product = lazy(() => import('./components/Product'))
 
 function CloseBtn({ onClick }) {
   return (
@@ -69,7 +70,9 @@ export default function App() {
             : 'pac-fade-in 320ms ease-out',
         }}>
           <CloseBtn onClick={closeLookbook} />
-          <Lookbook onProduct={handleTile} />
+          <Suspense fallback={null}>
+            <Lookbook onProduct={handleTile} />
+          </Suspense>
         </div>
       )}
 
@@ -85,7 +88,9 @@ export default function App() {
             : 'pac-fade-up 320ms cubic-bezier(.22,.61,.36,1)',
         }}>
           <CloseBtn onClick={closeProduct} />
-          <Product product={product} />
+          <Suspense fallback={null}>
+            <Product product={product} />
+          </Suspense>
         </div>
       )}
     </div>
