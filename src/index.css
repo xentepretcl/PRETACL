@@ -163,12 +163,22 @@ button, a {
   .pac-headerband-brand {
     font-size: 22px !important;
   }
+  .pac-drag-hint {
+    top: 30% !important;
+  }
   .pac-editorial {
-    top: 60px;
-    left: 20px;
-    right: 20px;
-    bottom: 20px;
+    /* Bottom sheet instead of a full-height overlay — leaves the globe
+       visible and draggable in the top portion of the screen. */
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: auto;
+    max-height: 52vh;
+    background: #fff;
+    border-top: 1px solid rgba(0,0,0,0.14);
+    padding: 16px 20px calc(20px + env(safe-area-inset-bottom));
+    box-sizing: border-box;
   }
   .pac-hero-display {
     font-size: clamp(40px, 14vw, 64px);

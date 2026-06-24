@@ -123,8 +123,10 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px'
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       const mobile = W < 768
-      cx = mobile ? W / 2 : W / 2 + 50; cy = mobile ? H * 0.55 : H / 2
-      R0 = Math.min(W, H) / (mobile ? 4.7 : 3.1)
+      // Mobile: editorial panel is now a bottom sheet (~52vh), so center the
+      // globe in the clear top portion of the screen instead of the middle.
+      cx = mobile ? W / 2 : W / 2 + 50; cy = mobile ? H * 0.30 : H / 2
+      R0 = Math.min(W, H) / (mobile ? 4.3 : 3.1)
     }
     applySize()
 
@@ -612,7 +614,7 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
 
       {/* One-time drag affordance hint — dismissed permanently on first pointerdown on the globe */}
       {hintVisible && !canvasPaused && (
-        <div aria-hidden="true" style={{
+        <div aria-hidden="true" className="pac-drag-hint" style={{
           position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
           zIndex: 5, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
           animation: 'pac-fade-in 700ms ease-out 900ms backwards',
