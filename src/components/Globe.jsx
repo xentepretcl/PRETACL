@@ -20,6 +20,16 @@ const CAT_META = {
 }
 const CAT_ORDER = ['SUPERIOR', 'INFERIOR', 'VESTIDOS', 'ACCESORIOS']
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
+  useEffect(() => {
+    const onResize = () => setMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return mobile
+}
+
 const COMBINING_MARK_LOW = 0x0300
 const COMBINING_MARK_HIGH = 0x036f
 function stripAccents(s) {
@@ -123,10 +133,11 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px'
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       const mobile = W < 768
-      // Mobile: editorial panel is now a bottom sheet (~52vh), so center the
-      // globe in the clear top portion of the screen instead of the middle.
-      cx = mobile ? W / 2 : W / 2 + 50; cy = mobile ? H * 0.30 : H / 2
-      R0 = Math.min(W, H) / (mobile ? 4.3 : 3.1)
+      // Mobile: full-bleed globe behind floating top chrome (~70px) and a
+      // bottom dock (~160px) — center a bit above middle, bigger radius
+      // since nothing solid covers it.
+      cx = mobile ? W / 2 : W / 2 + 50; cy = mobile ? H * 0.46 : H / 2
+      R0 = Math.min(W, H) / (mobile ? 2.5 : 3.1)
     }
     applySize()
 
@@ -364,6 +375,7 @@ function CatBlock({ aria, blockW, blockH, cells, ordered, n, cols, colStep, rowS
 
 // ---- Category Lookbook overlay ----
 function CatLookbook({ cats, startId, items, onClose, closing }) {
+  const mobile = useIsMobile()
   const list = useMemo(() => items.filter(i => cats.includes(i.c)), [items, cats])
   const [selId, setSelId] = useState(startId)
   const sel = list.find(i => i.id === selId) ?? list[0]
@@ -380,8 +392,9 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
     return i < 0 ? list : [...list.slice(i), ...list.slice(0, i)]
   }, [list, selId])
 
-  const tileW = 230, tileH = 305, gap = 26
-  const vw = window.innerWidth, vh = window.innerHeight - 74 - 132
+  const HEAD = mobile ? 54 : 74, FOOT = mobile ? 124 : 132
+  const tileW = mobile ? 138 : 230, tileH = mobile ? 184 : 305, gap = mobile ? 10 : 26
+  const vw = window.innerWidth, vh = window.innerHeight - HEAD - FOOT
   const colStep = tileW + gap, rowStep = tileH + gap
   const n = ordered.length
   const cols = Math.ceil((vw + colStep) / colStep) + 1
@@ -472,27 +485,79 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
 
   const selIdx = list.findIndex(i => i.id === sel?.id)
   const blockProps = { blockW, blockH, cells, ordered, n, cols, colStep, rowStep, tileW, tileH, selId: sel?.id, liked }
+  const goAdjacent = (dir) => {
+    if (!sel) return
+    const i = list.findIndex(x => x.id === sel.id)
+    const ni = (i + dir + list.length) % list.length
+    setSelId(list[ni].id)
+  }
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#fff', color: '#0a0a0a', fontFamily: FONT, display: 'flex', flexDirection: 'column', animation: closing ? 'pac-scale-out 240ms ease-in forwards' : 'pac-scale-in 280ms cubic-bezier(.22,.61,.36,1)' }}>
+      {mobile && (
+        <div style={{ height: HEAD, flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid rgba(0,0,0,0.14)' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600 }}>LOOKBOOK</div>
+            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {cats.map(c => CAT_META[c].label).join(' + ')}
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Cerrar lookbook" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, flexShrink: 0, border: '1px solid #0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>✕</button>
+        </div>
+      )}
+
       <div ref={vpRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', cursor: 'grab', touchAction: 'none', userSelect: 'none', background: '#f4f4f2' }}>
         <div ref={wrapRef} style={{ position: 'absolute', top: 0, left: 0, display: 'grid', gridTemplateColumns: 'max-content max-content', willChange: 'transform' }}>
           <CatBlock {...blockProps} /><CatBlock {...blockProps} aria />
           <CatBlock {...blockProps} aria /><CatBlock {...blockProps} aria />
         </div>
+        {mobile && (
+          <div aria-hidden="true" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', opacity: 0.55, textTransform: 'uppercase', pointerEvents: 'none' }}>
+            Arrastra · toca una prenda pa centrar
+          </div>
+        )}
       </div>
 
-      {/* Brand mark — floats over gallery, no background, matches the general lookbook. Kept outside
-          the draggable viewport so its pointer capture doesn't swallow clicks meant for it / the close button. */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '22px 0', pointerEvents: 'none', zIndex: 55 }}>
-        <div style={{ fontSize: 22, letterSpacing: 1, fontWeight: 700, color: '#fff', mixBlendMode: 'difference', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
-          PRET-A-CL
+      {!mobile && (
+        <>
+          {/* Brand mark — floats over gallery, no background, matches the general lookbook. Kept outside
+              the draggable viewport so its pointer capture doesn't swallow clicks meant for it / the close button. */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '22px 0', pointerEvents: 'none', zIndex: 55 }}>
+            <div style={{ fontSize: 22, letterSpacing: 1, fontWeight: 700, color: '#fff', mixBlendMode: 'difference', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
+              PRET-A-CL
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Cerrar lookbook" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 60, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>✕</button>
+        </>
+      )}
+
+      {sel && mobile && (
+        <div className="pac-lb-foot" style={{ height: FOOT, flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.14)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10, background: '#fff' }}>
+          <div key={sel.id} style={{ display: 'flex', gap: 12, alignItems: 'center', animation: 'pac-fade-up 220ms cubic-bezier(.22,.61,.36,1)' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>Nº {String(selIdx + 1).padStart(2, '0')}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', opacity: 0.6, textTransform: 'uppercase', fontWeight: 600 }}>{sel.t} · {CAT_META[sel.c].label}</div>
+              <div style={{ fontSize: 17, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sel.n}</div>
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{sel.p || '—'}</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => goAdjacent(-1)} aria-label="Anterior" style={{ all: 'unset', cursor: 'pointer', width: 44, flexShrink: 0, border: '1px solid #0a0a0a', background: '#fff', color: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>←</button>
+            {sel.url && (
+              <a href={sel.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', flex: 1 }}>
+                <div style={{ padding: '14px', background: '#0a0a0a', color: '#fff', textAlign: 'center', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>{sel.p ? 'COMPRAR ↗' : 'VER ↗'}</div>
+              </a>
+            )}
+            <button onClick={() => goAdjacent(1)} aria-label="Siguiente" style={{ all: 'unset', cursor: 'pointer', width: 44, flexShrink: 0, border: '1px solid #0a0a0a', background: '#fff', color: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>→</button>
+            <button onClick={() => toggle(sel.id)} aria-pressed={liked.has(sel.id)} aria-label={liked.has(sel.id) ? 'Quitar de wishlist' : 'Agregar a wishlist'}
+              style={{ all: 'unset', cursor: 'pointer', width: 44, flexShrink: 0, border: `1px solid ${liked.has(sel.id) ? '#0a0a0a' : 'rgba(0,0,0,0.3)'}`, background: liked.has(sel.id) ? '#0a0a0a' : 'transparent', color: liked.has(sel.id) ? '#fff' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+              {liked.has(sel.id) ? '♥' : '♡'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      <button onClick={onClose} aria-label="Cerrar lookbook" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 60, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>✕</button>
-
-      {sel && (
+      {sel && !mobile && (
         <div className="pac-lb-foot" style={{ height: 132, flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.14)', display: 'flex', alignItems: 'center', gap: S.md, padding: '0 24px', background: '#fff', overflow: 'hidden' }}>
           <div key={sel.id} className="pac-lb-foot-inner" style={{ display: 'flex', alignItems: 'center', gap: S.md, width: '100%', animation: 'pac-fade-up 220ms cubic-bezier(.22,.61,.36,1)' }}>
             <span className="pac-lb-foot-idx" style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>Nº {String(selIdx + 1).padStart(2, '0')}</span>
@@ -541,8 +606,22 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
   )
 }
 
+// ---- Mobile corner crop mark (decorative, frames the globe field) ----
+function CropMark({ top, bottom, left, right }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"
+      style={{ position: 'absolute', top, bottom, left, right, zIndex: 5, pointerEvents: 'none' }}>
+      <g stroke="rgba(0,0,0,0.55)" strokeWidth="1.5">
+        <line x1="0" y1="9" x2="18" y2="9" />
+        <line x1="9" y1="0" x2="9" y2="18" />
+      </g>
+    </svg>
+  )
+}
+
 // ---- Globe home page ----
 export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
+  const mobile = useIsMobile()
   const { liked } = useWishlist()
   const { user, signInWithGoogle } = useAuth()
   const signInRequested = useRef(false)
@@ -612,100 +691,173 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
         <GlobeCanvas items={ITEMS} activeCats={cats} hoverId={hoverId} onHover={onGlobeHover} onPick={onGlobePick} onFirstInteract={dismissHint} paused={canvasPaused} />
       </div>
 
-      {/* One-time drag affordance hint — dismissed permanently on first pointerdown on the globe */}
-      {hintVisible && !canvasPaused && (
-        <div aria-hidden="true" className="pac-drag-hint" style={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-          zIndex: 5, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
-          animation: 'pac-fade-in 700ms ease-out 900ms backwards',
-        }}>
-          <svg width="64" height="28" viewBox="0 0 64 28" style={{ animation: 'pac-hint-swipe 1.6s ease-in-out infinite' }}>
-            <path d="M6 14 H50 M50 14 L40 6 M50 14 L40 22" stroke="rgba(10,10,10,0.55)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 700 }}>
-            ARRASTRA PARA EXPLORAR
-          </div>
-        </div>
-      )}
-
-      {/* Header band — brand mark + tagline (left), coordinates + globe index + date (right) */}
-      <div className="pac-headerband" style={{ position: 'absolute', top: 56, left: 56, right: 56, height: 64, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'none', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
-        <span className="pac-headerband-brand" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 32, lineHeight: 0.9, letterSpacing: 0.5 }}>
-          PRET-A-CL<sup style={{ fontSize: 14 }}>©</sup>
-        </span>
-        <div className="pac-headerband-meta" style={{ display: 'flex', alignItems: 'baseline', gap: 26, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}>
-          <span className="pac-headerband-coords" style={{ color: '#0a0a0a' }}>SANTIAGO · 33°27′S 70°39′O</span>
-          <button onClick={handleAccountClick} className="pac-cta"
-            style={{ all: 'unset', pointerEvents: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 13px', fontWeight: 700, fontFamily: FONT, color: '#fff', background: '#0a0a0a' }}>
-            CUENTA
-          </button>
-        </div>
-      </div>
-
-      {/* Left editorial column: masthead + headline + intro (top) / numbered region index (bottom) */}
-      <div className="pac-editorial">
-        <div style={{ animation: 'pac-fade-up 600ms cubic-bezier(.22,.61,.36,1)' }}>
-          <div style={{ fontSize: 10, letterSpacing: 2.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600 }}>
-            ÍNDICE ORBITAL · {ITEMS.length} PIEZAS
-          </div>
-          <div className="pac-hero-display" style={{ textTransform: 'uppercase', marginTop: 16, fontWeight: 700 }}>
-            NO ES<br />RETAIL.<br />ES CULTO.
-          </div>
-          <div style={{ marginTop: 14, maxWidth: 420 }}>
-            <div style={{ fontSize: 13.5, lineHeight: 1.55, color: '#0a0a0a', fontWeight: 500 }}>
-              {ITEMS.length} piezas de {brandCount} sellos independientes orbitando en cuatro regiones. Selecciona una región y observa cada prenda elevarse desde la superficie del globo.
+      {mobile ? (
+        <>
+          {/* Floating top chrome — brand + counts (left), account/wishlist (right) */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, pointerEvents: 'none', padding: '14px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: 0.5, fontFamily: FONT }}>PRET-A-CL<sup style={{ fontSize: 9 }}>©</sup></div>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600, marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>
+                {String(ITEMS.length).padStart(2, '0')} PIEZAS · {String(brandCount).padStart(2, '0')} SELLOS
+              </div>
             </div>
+            <button onClick={handleAccountClick}
+              style={{ all: 'unset', pointerEvents: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '7px 11px', border: '1px solid #0a0a0a', fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', fontFamily: FONT, color: user && liked.size ? '#fff' : '#0a0a0a', background: user && liked.size ? '#0a0a0a' : '#fff' }}>
+              {user ? `${liked.size ? '♥' : '♡'} WISHLIST (${String(liked.size).padStart(2, '0')})` : 'CUENTA'}
+            </button>
           </div>
-          <button
-            onClick={onOpenLookbook}
-            className="pac-cta"
-            style={{ all: 'unset', cursor: 'pointer', display: 'inline-block', marginTop: 16, padding: '12px 32px', background: '#0a0a0a', color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}
-          >
-            VER TODO EL LOOKBOOK →
-          </button>
-        </div>
 
-        <div>
-          <div style={{ fontSize: 10, letterSpacing: 2, color: '#0a0a0a', textTransform: 'uppercase', marginBottom: 4, fontWeight: 600, animation: 'pac-fade-in 500ms ease-out' }}>
-            REGIONES / CATEGORÍAS
-          </div>
-          {CAT_ORDER.map((k, i) => {
-            const m = CAT_META[k]
-            const on = cats.includes(k)
-            return (
-              <button key={k} onClick={() => toggleCat(k)}
-                className="pac-catbtn pac-catbtn-row"
-                style={{ all: 'unset', cursor: 'pointer', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 16, padding: '9px 4px', borderTop: '1px solid rgba(0,0,0,0.14)', color: '#0a0a0a', fontFamily: FONT, animation: `pac-fade-up 450ms cubic-bezier(.22,.61,.36,1) ${i * 60}ms backwards` }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, width: 22, color: on ? '#0a0a0a' : '#0a0a0a', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
-                <span style={{ width: 15, height: 15, flexShrink: 0, border: `1.5px solid ${on ? '#000' : 'rgba(0,0,0,0.4)'}`, background: on ? '#000' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 10, fontWeight: 700, transition: 'background-color 150ms ease' }}>{on ? '✓' : ''}</span>
-                <span className="pac-catbtn-label" style={{ fontWeight: 700, fontSize: 20, letterSpacing: -0.4, textTransform: 'uppercase', flex: 1 }}>{m.label}</span>
-                <span style={{ fontSize: 11, fontWeight: 500, color: '#0a0a0a', fontVariantNumeric: 'tabular-nums' }}>{String(counts[k] || 0).padStart(2, '0')}</span>
-              </button>
-            )
-          })}
-          <div style={{ borderTop: '1px solid rgba(0,0,0,0.14)' }} />
-          {active ? (
-            <div style={{ display: 'flex', gap: S.xs, marginTop: 10, animation: 'pac-fade-up 280ms cubic-bezier(.22,.61,.36,1)' }}>
-              <button
-                onClick={() => listItems.length > 0 && setOpen({ cats: [...cats], startId: listItems[0].id })}
-                className="pac-cta"
-                style={{ all: 'unset', cursor: 'pointer', flex: 1, textAlign: 'center', padding: '11px', background: '#0a0a0a', color: '#fff', fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}>
-                ABRIR LOOKBOOK · {String(listItems.length).padStart(2, '0')} →
-              </button>
-              <button
-                onClick={() => setCats([])}
-                className="pac-catbtn"
-                style={{ all: 'unset', cursor: 'pointer', padding: '11px 18px', border: '1px solid #000', color: '#0a0a0a', fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}>
-                LIMPIAR ✕
-              </button>
-            </div>
-          ) : (
-            <div style={{ marginTop: 10, fontSize: 11, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase' }}>
-              ↑ Selecciona una o más regiones para activar
+          {/* Corner crop marks — frame the globe field, above chrome / below dock */}
+          <CropMark top={78} left={16} />
+          <CropMark top={78} right={16} />
+          <CropMark bottom={168} left={16} />
+          <CropMark bottom={168} right={16} />
+
+          {/* One-time drag affordance hint */}
+          {hintVisible && !canvasPaused && (
+            <div aria-hidden="true" style={{
+              position: 'absolute', top: '46%', left: '50%', transform: 'translate(-50%,-50%)',
+              zIndex: 5, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+              animation: 'pac-fade-in 700ms ease-out 900ms backwards',
+            }}>
+              <svg width="64" height="28" viewBox="0 0 64 28" style={{ animation: 'pac-hint-swipe 1.6s ease-in-out infinite' }}>
+                <path d="M6 14 H50 M50 14 L40 6 M50 14 L40 22" stroke="rgba(10,10,10,0.55)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
           )}
-        </div>
-      </div>
+
+          {/* Floating bottom dock — hint/CTA row + horizontal-scroll category chips */}
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 10, padding: '0 12px 14px', paddingBottom: 'calc(14px + env(safe-area-inset-bottom))' }}>
+            {active ? (
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <button
+                  onClick={() => listItems.length > 0 && setOpen({ cats: [...cats], startId: listItems[0].id })}
+                  style={{ all: 'unset', cursor: 'pointer', flex: 1, textAlign: 'center', padding: '15px', background: '#0a0a0a', color: '#fff', fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', fontFamily: FONT }}>
+                  ABRIR LOOKBOOK · {String(listItems.length).padStart(2, '0')} →
+                </button>
+                <button
+                  onClick={() => setCats([])}
+                  style={{ all: 'unset', cursor: 'pointer', padding: '15px 16px', border: '1px solid #0a0a0a', background: '#fff', color: '#0a0a0a', fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', fontFamily: FONT }}>✕</button>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase', marginBottom: 10 }}>
+                Arrastra para rotar · elige una región
+              </div>
+            )}
+            <div className="pac-chiprow" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+              {CAT_ORDER.map((k, i) => {
+                const m = CAT_META[k]
+                const on = cats.includes(k)
+                return (
+                  <button key={k} onClick={() => toggleCat(k)}
+                    style={{ all: 'unset', cursor: 'pointer', flex: 'none', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', border: '1px solid #0a0a0a', background: on ? '#0a0a0a' : '#fff', color: on ? '#fff' : '#0a0a0a', whiteSpace: 'nowrap', fontFamily: FONT }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, fontVariantNumeric: 'tabular-nums', opacity: 0.7 }}>{String(i + 1).padStart(2, '0')}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.3, textTransform: 'uppercase' }}>{m.label}</span>
+                    <span style={{ fontSize: 9, fontWeight: 500, fontVariantNumeric: 'tabular-nums', opacity: 0.7 }}>{String(counts[k] || 0).padStart(2, '0')}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* One-time drag affordance hint — dismissed permanently on first pointerdown on the globe */}
+          {hintVisible && !canvasPaused && (
+            <div aria-hidden="true" className="pac-drag-hint" style={{
+              position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+              zIndex: 5, pointerEvents: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+              animation: 'pac-fade-in 700ms ease-out 900ms backwards',
+            }}>
+              <svg width="64" height="28" viewBox="0 0 64 28" style={{ animation: 'pac-hint-swipe 1.6s ease-in-out infinite' }}>
+                <path d="M6 14 H50 M50 14 L40 6 M50 14 L40 22" stroke="rgba(10,10,10,0.55)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 700 }}>
+                ARRASTRA PARA EXPLORAR
+              </div>
+            </div>
+          )}
+
+          {/* Header band — brand mark + tagline (left), coordinates + globe index + date (right) */}
+          <div className="pac-headerband" style={{ position: 'absolute', top: 56, left: 56, right: 56, height: 64, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'none', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
+            <span className="pac-headerband-brand" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 32, lineHeight: 0.9, letterSpacing: 0.5 }}>
+              PRET-A-CL<sup style={{ fontSize: 14 }}>©</sup>
+            </span>
+            <div className="pac-headerband-meta" style={{ display: 'flex', alignItems: 'baseline', gap: 26, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}>
+              <span className="pac-headerband-coords" style={{ color: '#0a0a0a' }}>SANTIAGO · 33°27′S 70°39′O</span>
+              <button onClick={handleAccountClick} className="pac-cta"
+                style={{ all: 'unset', pointerEvents: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 13px', fontWeight: 700, fontFamily: FONT, color: '#fff', background: '#0a0a0a' }}>
+                CUENTA
+              </button>
+            </div>
+          </div>
+
+          {/* Left editorial column: masthead + headline + intro (top) / numbered region index (bottom) */}
+          <div className="pac-editorial">
+            <div style={{ animation: 'pac-fade-up 600ms cubic-bezier(.22,.61,.36,1)' }}>
+              <div style={{ fontSize: 10, letterSpacing: 2.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600 }}>
+                ÍNDICE ORBITAL · {ITEMS.length} PIEZAS
+              </div>
+              <div className="pac-hero-display" style={{ textTransform: 'uppercase', marginTop: 16, fontWeight: 700 }}>
+                NO ES<br />RETAIL.<br />ES CULTO.
+              </div>
+              <div style={{ marginTop: 14, maxWidth: 420 }}>
+                <div style={{ fontSize: 13.5, lineHeight: 1.55, color: '#0a0a0a', fontWeight: 500 }}>
+                  {ITEMS.length} piezas de {brandCount} sellos independientes orbitando en cuatro regiones. Selecciona una región y observa cada prenda elevarse desde la superficie del globo.
+                </div>
+              </div>
+              <button
+                onClick={onOpenLookbook}
+                className="pac-cta"
+                style={{ all: 'unset', cursor: 'pointer', display: 'inline-block', marginTop: 16, padding: '12px 32px', background: '#0a0a0a', color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}
+              >
+                VER TODO EL LOOKBOOK →
+              </button>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 10, letterSpacing: 2, color: '#0a0a0a', textTransform: 'uppercase', marginBottom: 4, fontWeight: 600, animation: 'pac-fade-in 500ms ease-out' }}>
+                REGIONES / CATEGORÍAS
+              </div>
+              {CAT_ORDER.map((k, i) => {
+                const m = CAT_META[k]
+                const on = cats.includes(k)
+                return (
+                  <button key={k} onClick={() => toggleCat(k)}
+                    className="pac-catbtn pac-catbtn-row"
+                    style={{ all: 'unset', cursor: 'pointer', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 16, padding: '9px 4px', borderTop: '1px solid rgba(0,0,0,0.14)', color: '#0a0a0a', fontFamily: FONT, animation: `pac-fade-up 450ms cubic-bezier(.22,.61,.36,1) ${i * 60}ms backwards` }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, width: 22, color: on ? '#0a0a0a' : '#0a0a0a', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
+                    <span style={{ width: 15, height: 15, flexShrink: 0, border: `1.5px solid ${on ? '#000' : 'rgba(0,0,0,0.4)'}`, background: on ? '#000' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 10, fontWeight: 700, transition: 'background-color 150ms ease' }}>{on ? '✓' : ''}</span>
+                    <span className="pac-catbtn-label" style={{ fontWeight: 700, fontSize: 20, letterSpacing: -0.4, textTransform: 'uppercase', flex: 1 }}>{m.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 500, color: '#0a0a0a', fontVariantNumeric: 'tabular-nums' }}>{String(counts[k] || 0).padStart(2, '0')}</span>
+                  </button>
+                )
+              })}
+              <div style={{ borderTop: '1px solid rgba(0,0,0,0.14)' }} />
+              {active ? (
+                <div style={{ display: 'flex', gap: S.xs, marginTop: 10, animation: 'pac-fade-up 280ms cubic-bezier(.22,.61,.36,1)' }}>
+                  <button
+                    onClick={() => listItems.length > 0 && setOpen({ cats: [...cats], startId: listItems[0].id })}
+                    className="pac-cta"
+                    style={{ all: 'unset', cursor: 'pointer', flex: 1, textAlign: 'center', padding: '11px', background: '#0a0a0a', color: '#fff', fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}>
+                    ABRIR LOOKBOOK · {String(listItems.length).padStart(2, '0')} →
+                  </button>
+                  <button
+                    onClick={() => setCats([])}
+                    className="pac-catbtn"
+                    style={{ all: 'unset', cursor: 'pointer', padding: '11px 18px', border: '1px solid #000', color: '#0a0a0a', fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}>
+                    LIMPIAR ✕
+                  </button>
+                </div>
+              ) : (
+                <div style={{ marginTop: 10, fontSize: 11, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase' }}>
+                  ↑ Selecciona una o más regiones para activar
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Right-side hover card — appears when hovering a spike with active category filter */}
       {gHoverItem && (

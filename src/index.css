@@ -149,44 +149,14 @@ button, a {
 
 @media (max-width: 767px) {
   .pac-grid,
-  .pac-headerband-tag,
-  .pac-headerband-coords,
   .pac-footerband {
     display: none !important;
   }
-  .pac-headerband {
-    top: 16px !important;
-    left: 20px !important;
-    right: 20px !important;
-    height: auto !important;
+  .pac-chiprow {
+    scrollbar-width: none;
   }
-  .pac-headerband-brand {
-    font-size: 22px !important;
-  }
-  .pac-drag-hint {
-    top: 30% !important;
-  }
-  .pac-editorial {
-    /* Bottom sheet instead of a full-height overlay — leaves the globe
-       visible and draggable in the top portion of the screen. */
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: auto;
-    max-height: 52vh;
-    background: #fff;
-    border-top: 1px solid rgba(0,0,0,0.14);
-    padding: 16px 20px calc(20px + env(safe-area-inset-bottom));
-    box-sizing: border-box;
-  }
-  .pac-hero-display {
-    font-size: clamp(40px, 14vw, 64px);
-    letter-spacing: -2px;
-  }
-  .pac-catbtn-row {
-    min-width: 0;
-    width: 100%;
+  .pac-chiprow::-webkit-scrollbar {
+    display: none;
   }
   .pac-product-grid {
     grid-template-columns: 1fr !important;
@@ -210,40 +180,6 @@ button, a {
     height: 70vw !important;
     min-height: 320px;
   }
-  .pac-lb-foot {
-    height: auto !important;
-    padding: 12px 14px !important;
-    gap: 10px !important;
-  }
-  .pac-lb-foot-inner {
-    flex-wrap: wrap !important;
-    row-gap: 10px !important;
-  }
-  .pac-lb-foot-idx {
-    display: none !important;
-  }
-  .pac-lb-foot-thumb {
-    width: 60px !important;
-    height: 70px !important;
-  }
-  .pac-lb-foot-name {
-    font-size: 13px !important;
-  }
-  .pac-lb-foot-actions {
-    flex: 1 1 100% !important;
-    justify-content: space-between !important;
-  }
-  .pac-lb-foot-cta {
-    flex: 1 !important;
-    padding: 10px 14px !important;
-    font-size: 11px !important;
-    justify-content: center !important;
-    display: flex !important;
-  }
-  .pac-lb-foot-heart {
-    width: 42px !important;
-    height: 42px !important;
-  }
   .pac-hovercard {
     right: 14px !important;
     left: 14px !important;
@@ -253,14 +189,5 @@ button, a {
   }
   .pac-hovercard [data-hovercard-img] {
     height: 38vh !important;
-  }
-}
-
-@media (max-width: 380px) {
-  .pac-hero-display {
-    font-size: clamp(34px, 16vw, 52px) !important;
-  }
-  .pac-catbtn-label {
-    font-size: 15px !important;
   }
 }
