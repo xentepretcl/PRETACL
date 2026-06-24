@@ -7,7 +7,7 @@ import { useWishlist } from '../WishlistContext'
 export default function Product({ product }) {
   const p = product || PRODUCTS[5]
   const b = BRANDS[p.brand]
-  const photos = [p.img, p.img2, p.img, p.img2].filter(Boolean)
+  const photos = [p.img, p.img2].filter(Boolean)
   const soldOut = p.price === 'AGOTADO'
   const { liked, toggle } = useWishlist()
   const pid = PRODUCTS.indexOf(p)
