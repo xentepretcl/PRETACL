@@ -3,6 +3,8 @@ import { PRODUCTS, BRANDS } from '../data'
 import { S } from '../tokens'
 import { cdnResize } from '../imgUtil'
 import { useTilt } from '../useTilt'
+import { useWishlist } from '../WishlistContext'
+import { useAuth } from '../AuthContext'
 
 const Product = lazy(() => import('./Product'))
 
@@ -18,11 +20,26 @@ const CAT_META = {
 }
 const CAT_ORDER = ['SUPERIOR', 'INFERIOR', 'VESTIDOS', 'ACCESORIOS']
 
-function classify(name) {
-  const n = name.toLowerCase()
-  if (/vestido|dress|entero|jumpsuit|jumper pliss|maxi puffy|ola dress|sade dress/.test(n)) return 'VESTIDOS'
-  if (/falda|pantalon|jean|short|bermuda|pollera|legging|jeans|bikini|tanga/.test(n)) return 'INFERIOR'
-  if (/gorro|gorra|\bcap\b|zapato|shoe|bolso|\bbag\b|belt|bufanda|tote|case|bandana|joya|baguette|slipmat|loafer|headphone|cartera/.test(n)) return 'ACCESORIOS'
+const COMBINING_MARK_LOW = 0x0300
+const COMBINING_MARK_HIGH = 0x036f
+function stripAccents(s) {
+  return Array.from(s.normalize('NFD'))
+    .filter((ch) => {
+      const c = ch.codePointAt(0)
+      return c < COMBINING_MARK_LOW || c > COMBINING_MARK_HIGH
+    })
+    .join('')
+}
+
+// `url` is included in the match text because some brand slugs (e.g. treino's
+// "pantalon-baggy-barrel...") name the garment type only in the URL, not in
+// the display name. The jacket/chaqueta guard stops "WORK JACKET ... JEANS"
+// (denim as a material descriptor) from being misread as bottomwear.
+function classify(name, url) {
+  const n = stripAccents(`${name} ${url || ''}`.toLowerCase())
+  if (/vestido|dress|entero|jumpsuit|\bmono\b|jumper pliss|maxi puffy|ola dress|sade dress/.test(n)) return 'VESTIDOS'
+  if (!/jacket|chaqueta/.test(n) && /falda|pantalon|\bpants\b|skirt|jean|short|bermuda|pollera|legging|bikini|tanga/.test(n)) return 'INFERIOR'
+  if (/gorro|gorra|\bcap\b|beani?e|zapato|shoe|bolso|\bbag\b|\bbelt\b|cinturon|bufanda|tote|case|bandana|joya|baguette|slipmat|loafer|headphone|cartera/.test(n)) return 'ACCESORIOS'
   return 'SUPERIOR'
 }
 
@@ -37,7 +54,7 @@ function globePos(cat, idx) {
 }
 
 const ITEMS = PRODUCTS.map((p, idx) => {
-  const c = classify(p.name)
+  const c = classify(p.name, p.url)
   const pos = globePos(c, idx)
   const brand = BRANDS[p.brand]
   return { id: idx, t: brand?.name ?? p.brand.toUpperCase(), n: p.name, c, p: p.price, img: p.img, url: p.url, ...pos }
@@ -57,40 +74,18 @@ function fibonacci(n) {
   return pts
 }
 
-// ---- Roman instrument date ----
-const ROMAN_MONTHS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']
-function toRoman(num) {
-  const vals = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']]
-  let n = num, out = ''
-  for (const [v, s] of vals) { while (n >= v) { out += s; n -= v } }
-  return out
-}
-function romanDate(d) {
-  return `${String(d.getDate()).padStart(2, '0')}.${ROMAN_MONTHS[d.getMonth()]}.${toRoman(d.getFullYear())}`
-}
-
-// ---- Decorative instrument grid: column hairlines, frame, rule lines, crop marks ----
+// ---- Decorative instrument grid: column hairlines, frame, rule lines ----
 function GridFrame() {
-  const corners = [
-    { top: 56, left: 56 }, { top: 56, right: 56 },
-    { bottom: 56, left: 56 }, { bottom: 56, right: 56 },
-  ]
   return (
     <div className="pac-grid" aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
       <div style={{
-        position: 'absolute', top: 56, left: 56, right: 56, bottom: 56,
+        position: 'absolute', top: 32, left: 32, right: 32, bottom: 32,
         border: '1px solid rgba(0,0,0,0.20)',
         backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.07) 1px, transparent 1px)',
         backgroundSize: 'calc((100% - 1px)/12) 100%',
       }} />
-      <div style={{ position: 'absolute', top: 120, left: 56, right: 56, borderTop: '1px solid rgba(0,0,0,0.20)' }} />
-      <div style={{ position: 'absolute', bottom: 112, left: 56, right: 56, borderTop: '1px solid rgba(0,0,0,0.20)' }} />
-      {corners.map((pos, i) => (
-        <svg key={i} width="32" height="32" viewBox="0 0 32 32" style={{ position: 'absolute', ...pos, transform: 'translate(-50%,-50%)' }}>
-          <line x1="0" y1="16" x2="32" y2="16" stroke="#000" strokeWidth="1.5" />
-          <line x1="16" y1="0" x2="16" y2="32" stroke="#000" strokeWidth="1.5" />
-        </svg>
-      ))}
+      <div style={{ position: 'absolute', top: 136, left: 32, right: 32, borderTop: '1px solid rgba(0,0,0,0.20)' }} />
+      <div style={{ position: 'absolute', bottom: 128, left: 32, right: 32, borderTop: '1px solid rgba(0,0,0,0.20)' }} />
     </div>
   )
 }
@@ -330,22 +325,25 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
   return <canvas ref={ref} style={{ display: 'block', cursor: 'grab', touchAction: 'none', animation: 'pac-scale-in 700ms cubic-bezier(.22,.61,.36,1)' }} />
 }
 
-function CatTile({ it, isSel, delay, style }) {
+function CatTile({ it, isSel, delay, liked, style }) {
   const { ref, onPointerMove, onPointerLeave } = useTilt(6)
   return (
     <div data-lid={it.id} className="pac-tile" style={{ ...style, animation: `pac-scale-in 420ms cubic-bezier(.22,.61,.36,1) ${delay}ms backwards` }}>
       <div ref={ref} onPointerMove={onPointerMove} onPointerLeave={onPointerLeave} className="pac-tile-card" style={{ position: 'relative', background: '#ececef', overflow: 'hidden', width: '100%', height: '100%', borderRadius: 2, outline: isSel ? '2px solid #000' : '1px solid rgba(0,0,0,0.12)', outlineOffset: isSel ? 2 : 0, transition: 'outline-color 150ms ease, transform 260ms cubic-bezier(.22,.61,.36,1)' }}>
         {it.img && <img src={cdnResize(it.img, 460)} alt={it.n} width={230} height={305} loading="lazy" decoding="async" draggable={false} onError={(e) => { e.currentTarget.style.display = 'none' }} className="pac-tile-img" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 320ms cubic-bezier(.22,.61,.36,1)' }} />}
-        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '10px 13px', background: 'linear-gradient(0deg,rgba(255,255,255,0.94),rgba(255,255,255,0))', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div data-heart={it.id} role="button" aria-pressed={liked} aria-label={liked ? 'Quitar de wishlist' : 'Agregar a wishlist'} style={{ position: 'absolute', top: 8, right: 8, zIndex: 2, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, background: liked ? '#0a0a0a' : 'rgba(255,255,255,0.88)', color: liked ? '#fff' : '#0a0a0a', cursor: 'pointer' }}>
+          {liked ? '♥' : '♡'}
+        </div>
+        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '10px 13px', background: 'rgba(255,255,255,0.92)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <span style={{ color: '#0a0a0a', fontWeight: 700, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.n}</span>
-          <span style={{ color: '#555', fontWeight: 500, fontSize: 10, whiteSpace: 'nowrap', marginLeft: 6 }}>{it.p}</span>
+          <span style={{ color: '#0a0a0a', fontWeight: 500, fontSize: 10, whiteSpace: 'nowrap', marginLeft: 6 }}>{it.p}</span>
         </div>
       </div>
     </div>
   )
 }
 
-function CatBlock({ aria, blockW, blockH, cells, ordered, n, cols, colStep, rowStep, tileW, tileH, selId }) {
+function CatBlock({ aria, blockW, blockH, cells, ordered, n, cols, colStep, rowStep, tileW, tileH, selId, liked }) {
   return (
     <div aria-hidden={aria || undefined} style={{ position: 'relative', width: blockW, height: blockH }}>
       {Array.from({ length: cells }).map((_, idx) => {
@@ -354,7 +352,7 @@ function CatBlock({ aria, blockW, blockH, cells, ordered, n, cols, colStep, rowS
         const isSel = !aria && it.id === selId && idx < n
         const delay = ((col + row) % 7) * 45
         return (
-          <CatTile key={idx} it={it} isSel={isSel} delay={delay}
+          <CatTile key={idx} it={it} isSel={isSel} delay={delay} liked={liked.has(it.id)}
             style={{ position: 'absolute', left: col * colStep, top: row * rowStep + (col % 2 ? rowStep / 2 : 0), width: tileW, height: tileH }} />
         )
       })}
@@ -369,6 +367,7 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
   const sel = list.find(i => i.id === selId) ?? list[0]
   const [product, setProduct] = useState(null)
   const [productClosing, setProductClosing] = useState(false)
+  const { liked, toggle } = useWishlist()
   const closeProduct = useCallback(() => {
     setProductClosing(true)
     setTimeout(() => { setProduct(null); setProductClosing(false) }, PRODUCT_EXIT_MS)
@@ -425,11 +424,16 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
       const moved = Math.hypot(e.clientX - drag.current.sx, e.clientY - drag.current.sy)
       if (moved < 6 && Date.now() - drag.current.t < 400) {
         const hit = document.elementFromPoint(e.clientX, e.clientY)
-        const tile = hit?.closest('[data-lid]')
-        if (tile) {
-          const id = +tile.dataset.lid
-          setSelId(id)
-          setProduct(PRODUCTS[id])
+        const heart = hit?.closest('[data-heart]')
+        if (heart) {
+          toggle(+heart.dataset.heart)
+        } else {
+          const tile = hit?.closest('[data-lid]')
+          if (tile) {
+            const id = +tile.dataset.lid
+            setSelId(id)
+            setProduct(PRODUCTS[id])
+          }
         }
       }
       drag.current = null; el.style.cursor = 'grab'
@@ -451,8 +455,21 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
     }
   }, [blockW, blockH, ordered])
 
+  if (list.length === 0) {
+    return (
+      <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#fff', color: '#0a0a0a', fontFamily: FONT, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 32px', animation: closing ? 'pac-scale-out 240ms ease-in forwards' : 'pac-scale-in 280ms cubic-bezier(.22,.61,.36,1)' }}>
+        <button onClick={onClose} aria-label="Cerrar lookbook" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 60, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>✕</button>
+        <div style={{ fontSize: 56, marginBottom: 8 }}>♡</div>
+        <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5, textTransform: 'uppercase' }}>Tu wishlist está vacía</div>
+        <div style={{ fontSize: 13, fontWeight: 500, letterSpacing: 1, color: '#0a0a0a', textTransform: 'uppercase', marginTop: 14, maxWidth: 420, lineHeight: 1.6 }}>
+          Abre un lookbook y toca el corazón ♥ en cualquier prenda para guardarla aquí.
+        </div>
+      </div>
+    )
+  }
+
   const selIdx = list.findIndex(i => i.id === sel?.id)
-  const blockProps = { blockW, blockH, cells, ordered, n, cols, colStep, rowStep, tileW, tileH, selId: sel?.id }
+  const blockProps = { blockW, blockH, cells, ordered, n, cols, colStep, rowStep, tileW, tileH, selId: sel?.id, liked }
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#fff', color: '#0a0a0a', fontFamily: FONT, display: 'flex', flexDirection: 'column', animation: closing ? 'pac-scale-out 240ms ease-in forwards' : 'pac-scale-in 280ms cubic-bezier(.22,.61,.36,1)' }}>
@@ -481,16 +498,20 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
               {sel.img && <img src={cdnResize(sel.img, 180)} alt={sel.n} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="pac-lb-foot-brand" style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#6a6a72', marginBottom: 4 }}>{sel.t} · {CAT_META[sel.c].label}</div>
+              <div className="pac-lb-foot-brand" style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#0a0a0a', marginBottom: 4 }}>{sel.t} · {CAT_META[sel.c].label}</div>
               <div className="pac-lb-foot-name" style={{ fontSize: 16, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3, lineHeight: 1.2, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sel.n}</div>
               <div style={{ fontSize: 13, fontWeight: 500 }}>{sel.p}</div>
             </div>
             {sel.url && (
               <a href={sel.url} target="_blank" rel="noopener noreferrer" className="pac-lb-foot-cta"
                 style={{ all: 'unset', cursor: 'pointer', padding: '13px 24px', background: '#0a0a0a', color: '#fff', fontWeight: 700, fontSize: 13, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {sel.p ? 'COMPRAR' : 'VER'} ↗ <span style={{ color: '#9a9992', marginLeft: 8 }}>{sel.t}</span>
+                {sel.p ? 'COMPRAR' : 'VER'} ↗ <span style={{ color: '#0a0a0a', marginLeft: 8 }}>{sel.t}</span>
               </a>
             )}
+            <button onClick={() => toggle(sel.id)} aria-pressed={liked.has(sel.id)} aria-label={liked.has(sel.id) ? 'Quitar de wishlist' : 'Agregar a wishlist'}
+              style={{ all: 'unset', cursor: 'pointer', width: 50, height: 50, flexShrink: 0, border: `1px solid ${liked.has(sel.id) ? '#0a0a0a' : 'rgba(0,0,0,0.3)'}`, background: liked.has(sel.id) ? '#0a0a0a' : 'transparent', color: liked.has(sel.id) ? '#fff' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+              {liked.has(sel.id) ? '♥' : '♡'}
+            </button>
           </div>
         </div>
       )}
@@ -516,7 +537,10 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
 }
 
 // ---- Globe home page ----
-export default function Globe({ onOpenLookbook, paused }) {
+export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
+  const { liked } = useWishlist()
+  const { user, signInWithGoogle } = useAuth()
+  const signInRequested = useRef(false)
   const [cats, setCats] = useState([])
   const [hoverId, setHoverId] = useState(null)
   const [gHover, setGHover] = useState(null)
@@ -556,7 +580,22 @@ export default function Globe({ onOpenLookbook, paused }) {
     try { localStorage.setItem('pac-globe-hint-seen', '1') } catch (_) {}
   }, [])
 
-  const todayLabel = useMemo(() => romanDate(new Date()), [])
+
+  useEffect(() => {
+    if (user && signInRequested.current) {
+      signInRequested.current = false
+      onOpenWishlist()
+    }
+  }, [user, onOpenWishlist])
+
+  const handleAccountClick = useCallback(() => {
+    if (user) {
+      onOpenWishlist()
+    } else {
+      signInRequested.current = true
+      signInWithGoogle()
+    }
+  }, [user, onOpenWishlist, signInWithGoogle])
 
   return (
     <div className="pac-viewport" style={{ position: 'relative', background: '#fff', color: '#0a0a0a', fontFamily: FONT, overflow: 'hidden' }}>
@@ -578,52 +617,51 @@ export default function Globe({ onOpenLookbook, paused }) {
           <svg width="64" height="28" viewBox="0 0 64 28" style={{ animation: 'pac-hint-swipe 1.6s ease-in-out infinite' }}>
             <path d="M6 14 H50 M50 14 L40 6 M50 14 L40 22" stroke="rgba(10,10,10,0.55)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#6a6a72', textTransform: 'uppercase', fontWeight: 700 }}>
+          <div style={{ fontSize: 10, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 700 }}>
             ARRASTRA PARA EXPLORAR
           </div>
         </div>
       )}
 
       {/* Header band — brand mark + tagline (left), coordinates + globe index + date (right) */}
-      <div className="pac-headerband" style={{ position: 'absolute', top: 56, left: 64, right: 64, height: 64, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'none', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 18 }}>
-          <span style={{ fontWeight: 700, fontSize: 18, letterSpacing: 1 }}>PRET-A-CL<sup style={{ fontSize: 9 }}>©</sup></span>
-          <span className="pac-headerband-tag" style={{ fontWeight: 600, fontSize: 11, letterSpacing: 2.5, color: '#6a6a72', textTransform: 'uppercase' }}>
-            PLATAFORMA DE MODA INDEPENDIENTE · CHILE
-          </span>
-        </div>
+      <div className="pac-headerband" style={{ position: 'absolute', top: 56, left: 56, right: 56, height: 64, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'none', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
+        <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 32, lineHeight: 0.9, letterSpacing: 0.5 }}>
+          PRET-A-CL<sup style={{ fontSize: 14 }}>©</sup>
+        </span>
         <div className="pac-headerband-meta" style={{ display: 'flex', alignItems: 'baseline', gap: 26, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}>
-          <span style={{ color: '#6a6a72' }}>SANTIAGO · 33°27′S 70°39′O</span>
-          <span style={{ fontWeight: 700 }}>GLOBO Nº 01</span>
-          <span style={{ color: '#6a6a72' }}>{todayLabel}</span>
+          <span style={{ color: '#0a0a0a' }}>SANTIAGO · 33°27′S 70°39′O</span>
+          <button onClick={handleAccountClick} className="pac-cta"
+            style={{ all: 'unset', pointerEvents: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 13px', fontWeight: 700, fontFamily: FONT, color: '#fff', background: '#0a0a0a' }}>
+            CUENTA
+          </button>
         </div>
       </div>
 
       {/* Left editorial column: masthead + headline + intro (top) / numbered region index (bottom) */}
       <div className="pac-editorial">
         <div style={{ animation: 'pac-fade-up 600ms cubic-bezier(.22,.61,.36,1)' }}>
-          <div style={{ fontSize: 10, letterSpacing: 2.5, color: '#6a6a72', textTransform: 'uppercase', fontWeight: 600 }}>
-            ÍNDICE ORBITAL — {ITEMS.length} PIEZAS
+          <div style={{ fontSize: 10, letterSpacing: 2.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600 }}>
+            ÍNDICE ORBITAL · {ITEMS.length} PIEZAS
           </div>
           <div className="pac-hero-display" style={{ textTransform: 'uppercase', marginTop: 16, fontWeight: 700 }}>
             NO ES<br />RETAIL.<br />ES CULTO.
           </div>
-          <div style={{ marginTop: 20, maxWidth: 420 }}>
-            <div style={{ fontSize: 13.5, lineHeight: 1.55, color: '#6a6a72', fontWeight: 500 }}>
+          <div style={{ marginTop: 14, maxWidth: 420 }}>
+            <div style={{ fontSize: 13.5, lineHeight: 1.55, color: '#0a0a0a', fontWeight: 500 }}>
               {ITEMS.length} piezas de {brandCount} sellos independientes orbitando en cuatro regiones. Selecciona una región y observa cada prenda elevarse desde la superficie del globo.
             </div>
           </div>
           <button
             onClick={onOpenLookbook}
             className="pac-cta"
-            style={{ all: 'unset', cursor: 'pointer', display: 'inline-block', marginTop: 22, padding: `${S.sm}px ${S.lg}px`, background: '#0a0a0a', color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}
+            style={{ all: 'unset', cursor: 'pointer', display: 'inline-block', marginTop: 16, padding: '12px 32px', background: '#0a0a0a', color: '#fff', fontSize: 13, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}
           >
             VER TODO EL LOOKBOOK →
           </button>
         </div>
 
         <div>
-          <div style={{ fontSize: 10, letterSpacing: 2, color: '#6a6a72', textTransform: 'uppercase', marginBottom: 4, fontWeight: 600, animation: 'pac-fade-in 500ms ease-out' }}>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: '#0a0a0a', textTransform: 'uppercase', marginBottom: 4, fontWeight: 600, animation: 'pac-fade-in 500ms ease-out' }}>
             REGIONES / CATEGORÍAS
           </div>
           {CAT_ORDER.map((k, i) => {
@@ -632,32 +670,32 @@ export default function Globe({ onOpenLookbook, paused }) {
             return (
               <button key={k} onClick={() => toggleCat(k)}
                 className="pac-catbtn pac-catbtn-row"
-                style={{ all: 'unset', cursor: 'pointer', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 16, padding: '11px 4px', borderTop: '1px solid rgba(0,0,0,0.14)', color: '#0a0a0a', fontFamily: FONT, animation: `pac-fade-up 450ms cubic-bezier(.22,.61,.36,1) ${i * 60}ms backwards` }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, width: 22, color: on ? '#0a0a0a' : '#6a6a72', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
+                style={{ all: 'unset', cursor: 'pointer', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 16, padding: '9px 4px', borderTop: '1px solid rgba(0,0,0,0.14)', color: '#0a0a0a', fontFamily: FONT, animation: `pac-fade-up 450ms cubic-bezier(.22,.61,.36,1) ${i * 60}ms backwards` }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, width: 22, color: on ? '#0a0a0a' : '#0a0a0a', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
                 <span style={{ width: 15, height: 15, flexShrink: 0, border: `1.5px solid ${on ? '#000' : 'rgba(0,0,0,0.4)'}`, background: on ? '#000' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 10, fontWeight: 700, transition: 'background-color 150ms ease' }}>{on ? '✓' : ''}</span>
                 <span className="pac-catbtn-label" style={{ fontWeight: 700, fontSize: 20, letterSpacing: -0.4, textTransform: 'uppercase', flex: 1 }}>{m.label}</span>
-                <span style={{ fontSize: 11, fontWeight: 500, color: '#6a6a72', fontVariantNumeric: 'tabular-nums' }}>{String(counts[k] || 0).padStart(2, '0')}</span>
+                <span style={{ fontSize: 11, fontWeight: 500, color: '#0a0a0a', fontVariantNumeric: 'tabular-nums' }}>{String(counts[k] || 0).padStart(2, '0')}</span>
               </button>
             )
           })}
           <div style={{ borderTop: '1px solid rgba(0,0,0,0.14)' }} />
           {active ? (
-            <div style={{ display: 'flex', gap: S.xs, marginTop: 14, animation: 'pac-fade-up 280ms cubic-bezier(.22,.61,.36,1)' }}>
+            <div style={{ display: 'flex', gap: S.xs, marginTop: 10, animation: 'pac-fade-up 280ms cubic-bezier(.22,.61,.36,1)' }}>
               <button
                 onClick={() => listItems.length > 0 && setOpen({ cats: [...cats], startId: listItems[0].id })}
                 className="pac-cta"
-                style={{ all: 'unset', cursor: 'pointer', flex: 1, textAlign: 'center', padding: '14px', background: '#0a0a0a', color: '#fff', fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}>
+                style={{ all: 'unset', cursor: 'pointer', flex: 1, textAlign: 'center', padding: '11px', background: '#0a0a0a', color: '#fff', fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}>
                 ABRIR LOOKBOOK · {String(listItems.length).padStart(2, '0')} →
               </button>
               <button
                 onClick={() => setCats([])}
                 className="pac-catbtn"
-                style={{ all: 'unset', cursor: 'pointer', padding: '14px 18px', border: '1px solid #000', color: '#0a0a0a', fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}>
+                style={{ all: 'unset', cursor: 'pointer', padding: '11px 18px', border: '1px solid #000', color: '#0a0a0a', fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT }}>
                 LIMPIAR ✕
               </button>
             </div>
           ) : (
-            <div style={{ marginTop: 14, fontSize: 11, letterSpacing: 1.5, color: '#6a6a72', textTransform: 'uppercase' }}>
+            <div style={{ marginTop: 10, fontSize: 11, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase' }}>
               ↑ Selecciona una o más regiones para activar
             </div>
           )}
@@ -667,7 +705,7 @@ export default function Globe({ onOpenLookbook, paused }) {
       {/* Right-side hover card — appears when hovering a spike with active category filter */}
       {gHoverItem && (
         <div key={gHoverItem.id} className="pac-hovercard" style={{ position: 'absolute', top: '50%', right: 56, transform: 'translateY(-50%)', width: 270, background: 'rgba(255,255,255,0.96)', border: '1px solid rgba(0,0,0,0.14)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', pointerEvents: 'none', zIndex: 10, animation: 'pac-scale-in 180ms ease-out' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 10, letterSpacing: 2, color: '#6a6a72', textTransform: 'uppercase', fontWeight: 600, padding: '10px 14px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 10, letterSpacing: 2, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600, padding: '10px 14px 0' }}>
             <span style={{ fontWeight: 700, color: '#0a0a0a' }}>● EN ÓRBITA</span>
             <span>{CAT_META[gHoverItem.c].label}</span>
           </div>
@@ -675,7 +713,7 @@ export default function Globe({ onOpenLookbook, paused }) {
             {gHoverItem.img && <img src={cdnResize(gHoverItem.img, 500)} alt={gHoverItem.n} onError={(e) => { e.currentTarget.style.display = 'none' }} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
           </div>
           <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#6a6a72', marginBottom: 5 }}>{gHoverItem.t}</div>
+            <div style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#0a0a0a', marginBottom: 5 }}>{gHoverItem.t}</div>
             <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.3, textTransform: 'uppercase', lineHeight: 1.3, marginBottom: S.xs }}>{gHoverItem.n}</div>
             <div style={{ fontSize: 13, fontWeight: 500 }}>{gHoverItem.p}</div>
           </div>
@@ -683,8 +721,8 @@ export default function Globe({ onOpenLookbook, paused }) {
       )}
 
       {/* Footer band — instructions (left), totals (right) */}
-      <div className="pac-footerband" style={{ position: 'absolute', bottom: 56, left: 64, right: 64, height: 56, zIndex: 10, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>
-        <span style={{ color: '#6a6a72' }}>{active ? 'Click en una prenda para abrir el lookbook' : ''}</span>
+      <div className="pac-footerband" style={{ position: 'absolute', bottom: 56, left: 56, right: 56, height: 56, zIndex: 10, pointerEvents: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' }}>
+        <span style={{ color: '#0a0a0a' }}>{active ? 'Click en una prenda para abrir el lookbook' : ''}</span>
         <span style={{ color: '#0a0a0a', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{String(ITEMS.length).padStart(2, '0')} PIEZAS / {String(brandCount).padStart(2, '0')} SELLOS</span>
       </div>
 

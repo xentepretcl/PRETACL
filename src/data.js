@@ -8,6 +8,7 @@ export const BRANDS = {
       'Dirigida por la diseñadora Karina Martín, La Martic nace el 2021 de un proyecto de título del 2012. Diseño atemporal y sin género: prendas oversize y asimétricas que reinventan los básicos, con textiles nacionales y producción local en un taller liderado por mujeres.',
     store: 'LAMARTIC.CL',
     url: 'https://lamartic.cl/tienda/',
+    logo: 'https://lamartic.cl/wp-content/uploads/2023/09/LOGO-LAMARTIC.png',
   },
   degoya: {
     id: 'degoya',
@@ -18,6 +19,7 @@ export const BRANDS = {
       'Marca de streetwear santiaguino ligada a la escena musical local. Cápsulas estacionales de poleras, polerones, tartán y tejidos con gráficas propias, producidas en tirajes cortos y colaboraciones con sellos como Poxi Records.',
     store: 'DEGOYASTGO.COM',
     url: 'https://degoyastgo.com/collections/todo',
+    logo: 'https://degoyastgo.com/cdn/shop/files/Sin-titulo-3_450x.png?v=1682015704',
   },
   ames: {
     id: 'ames',
@@ -28,6 +30,7 @@ export const BRANDS = {
       'Departamento de denim y básicos de Santiago. Jeans 180, shorts y gorros producidos en series pequeñas que se agotan por drop: cuando se acaba, se acaba. Venta online y stocklist seleccionado.',
     store: 'AMESDEPT.COM',
     url: 'https://amesdept.com/collections/all',
+    logo: 'https://amesdept.com/cdn/shop/files/logo_baner_2.jpg?v=1752204771',
   },
   palosanto: {
     id: 'palosanto',
@@ -38,6 +41,8 @@ export const BRANDS = {
       'Marca de diseño independiente santiaguina con local en Galería Drugstore. Prendas con carácter gráfico e identidad propia: tartanes, brocatos, líneas metálicas y siluetas estructuradas que mezclan lo clásico con lo irreverente.',
     store: 'SHOP-PALOSANTO.COM',
     url: 'https://www.shop-palosanto.com/',
+    logo: 'https://cdn.shopify.com/s/files/1/0408/9626/6404/files/palosantowhite.png?v=1701452532',
+    logoDark: true,
   },
   trinidad: {
     id: 'trinidad',
@@ -48,6 +53,7 @@ export const BRANDS = {
       'Trinidad Studio es una marca chilena de diseño contemporáneo que trabaja con siluetas pensadas para el cuerpo femenino. Colecciones drop por drop, con énfasis en básicos elevados, vestidos de fiesta y chaquetas con carácter.',
     store: 'TRINIDAD-STUDIO.COM',
     url: 'https://trinidad-studio.com/',
+    logo: 'https://trinidad-studio.com/wp-content/uploads/2020/09/LOGO-TRINIDAD-STUDIO.png',
   },
   lcs: {
     id: 'lcs',
@@ -58,6 +64,7 @@ export const BRANDS = {
       'LCS Tailors es una marca de diseño emergente santiaguina con enfoque en sastrería contemporánea y gráfica de nicho. Cada colección mezcla referencias de subcultura con producción local cuidada: telas técnicas, cortes asimétricos y detalles de ringer tee.',
     store: 'LCSTAILORS.COM',
     url: 'https://lcstailors.com/',
+    logo: 'https://lcstailors.com/cdn/shop/t/17/assets/lcs-logo.svg',
   },
   vsa: {
     id: 'vsa',
@@ -68,6 +75,7 @@ export const BRANDS = {
       'VSA Worldwide es una marca chilena de streetwear con proyección internacional. Hoodies técnicos, tees gráficas y accesorios con identidad propia: cada prenda combina diseño local con estética global. Drops periódicos y ediciones limitadas.',
     store: 'VSAWORLDWIDE.CL',
     url: 'https://www.vsaworldwide.cl/ropa',
+    logo: 'https://images.jumpseller.com/store/vsaworldwide/store/logo/logo_vsa_72x.png?1736210404',
   },
   cmiller: {
     id: 'cmiller',
@@ -78,6 +86,7 @@ export const BRANDS = {
       'C. Miller es una marca de diseño femenino santiaguina que mezcla ropa y accesorios con carácter propio. Strapless, baby tees, faldas y zapatos con estética vintage-contemporánea, en ediciones pequeñas y drops sorpresa.',
     store: 'CMILLERSHOP.COM',
     url: 'https://www.cmillershop.com/collections/c-miller',
+    logo: 'https://www.cmillershop.com/cdn/shop/files/CMILLER_LOGO_1-01_1200x1200.png?v=1771890798',
   },
   doslobos: {
     id: 'doslobos',
@@ -88,6 +97,8 @@ export const BRANDS = {
       'Dos Lobos Chile es una marca de accesorios y ropa con estética metal y dark. Bags, bufandas, hoodies y tees con gráficas propias y materiales de carácter (reptil, chrome, suede) producidos en tirajes limitados con identidad de lobo.',
     store: 'DOSLOBOSCHILE.CL',
     url: 'https://dosloboschile.cl/',
+    logo: 'https://dosloboschile.cl/cdn/shop/files/doslobos-logo-peq.png?v=1688082319',
+    logoDark: true,
   },
   treino: {
     id: 'treino',
@@ -98,6 +109,7 @@ export const BRANDS = {
       'Treino es una marca chilena de streetwear con identidad gráfica fuerte. Poleras boxy fit, buzos baggy, pantalones barrel y work jackets en colores contrastantes: cada colección gira alrededor de un símbolo o mantra que se repite como ritual.',
     store: 'TREINO.CL',
     url: 'https://treino.cl/',
+    logo: 'https://treino.cl/cdn/shop/files/ISOTIPO-TREBOL-OG-NEGRO.png?v=1777314520',
   },
   guaico: {
     id: 'guaico',
@@ -118,6 +130,7 @@ export const BRANDS = {
       'Lalalou es una marca chilena de moda premium con foco en tejidos naturales de alta calidad: alpaca, cashmere, terciopelo y cotelé. Prendas de confección cuidada y siluetas sofisticadas que mezclan lo clásico con lo contemporáneo.',
     store: 'LALALOU.CL',
     url: 'https://lalalou.cl/',
+    logo: 'https://lalalou.cl/cdn/shop/files/logo_blanco_y_negro-03.png?v=1750709237',
   },
   munay: {
     id: 'munay',
@@ -128,6 +141,7 @@ export const BRANDS = {
       'Munay Sisters es una marca de diseño femenino chilena con identidad contemporánea y colorida. Tops wave, vestidos, faldas plisadas, jeans y blazers con carácter: prendas que se mueven y se sienten bien en el cuerpo.',
     store: 'MUNAYSISTERS.COM',
     url: 'https://munaysisters.com/collections/ver-todo',
+    logo: 'https://munaysisters.com/cdn/shop/files/MS07_2.png?v=1653674878',
   },
 }
 

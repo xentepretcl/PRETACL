@@ -127,9 +127,9 @@ button, a {
 
 .pac-editorial {
   position: absolute;
-  top: 140px;
-  left: 64px;
-  bottom: 130px;
+  top: 152px;
+  left: 56px;
+  bottom: 144px;
   width: min(34vw, 460px);
   z-index: 10;
   display: flex;

@@ -2,16 +2,22 @@ import { useRef, useState, useEffect } from 'react'
 import { BRANDS, PRODUCTS } from '../data'
 import { T, S } from '../tokens'
 import { cdnResize } from '../imgUtil'
+import { useWishlist } from '../WishlistContext'
 
 export default function Product({ product }) {
   const p = product || PRODUCTS[5]
   const b = BRANDS[p.brand]
   const photos = [p.img, p.img2, p.img, p.img2].filter(Boolean)
   const soldOut = p.price === 'AGOTADO'
+  const { liked, toggle } = useWishlist()
+  const pid = PRODUCTS.indexOf(p)
+  const isLiked = liked.has(pid)
 
   const scrollRef = useRef(null)
   const dragRef = useRef(null)
   const [revealed, setRevealed] = useState(() => new Set([0]))
+  const [logoFailed, setLogoFailed] = useState(false)
+  useEffect(() => { setLogoFailed(false) }, [p.brand])
 
   useEffect(() => {
     const root = scrollRef.current
@@ -75,15 +81,33 @@ export default function Product({ product }) {
           MARCA
         </div>
 
-        <div className="pac-product-brand" style={{
-          fontSize: 44,
-          letterSpacing: -1,
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          lineHeight: 0.95,
-        }}>
-          {b.name}
-        </div>
+        {b.logo && !logoFailed ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: 64,
+            padding: b.logoDark ? '14px 22px' : 0,
+            background: b.logoDark ? T.ink : 'transparent',
+          }}>
+            <img
+              src={b.logo}
+              alt={b.name}
+              onError={() => setLogoFailed(true)}
+              style={{ maxHeight: '100%', maxWidth: 220, objectFit: 'contain' }}
+            />
+          </div>
+        ) : (
+          <div className="pac-product-brand" style={{
+            fontSize: 44,
+            letterSpacing: -1,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            lineHeight: 0.95,
+          }}>
+            {b.name}
+          </div>
+        )}
 
         <div style={{
           fontSize: 10,
@@ -257,21 +281,25 @@ export default function Product({ product }) {
           </button>
         </a>
 
-        <button className="pac-wishlist" style={{
-          width: '100%',
-          marginTop: S.xs,
-          padding: `${S.sm}px`,
-          background: T.paper,
-          color: T.ink,
-          border: `1px solid ${T.hairStrong}`,
-          fontFamily: T.font,
-          fontWeight: 700,
-          fontSize: 13,
-          letterSpacing: 2,
-          textTransform: 'uppercase',
-          cursor: 'pointer',
-        }}>
-          ♡ WISHLIST
+        <button
+          className="pac-wishlist"
+          onClick={() => toggle(pid)}
+          aria-pressed={isLiked}
+          style={{
+            width: '100%',
+            marginTop: S.xs,
+            padding: `${S.sm}px`,
+            background: isLiked ? T.ink : T.paper,
+            color: isLiked ? T.paper : T.ink,
+            border: `1px solid ${T.hairStrong}`,
+            fontFamily: T.font,
+            fontWeight: 700,
+            fontSize: 13,
+            letterSpacing: 2,
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+          }}>
+          {isLiked ? '♥ EN WISHLIST' : '♡ WISHLIST'}
         </button>
       </div>
     </div>

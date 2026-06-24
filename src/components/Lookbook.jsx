@@ -1,17 +1,48 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { PRODUCTS, BRANDS } from '../data'
 import { T } from '../tokens'
 import { cdnResize } from '../imgUtil'
 import { useTilt } from '../useTilt'
+import { useWishlist } from '../WishlistContext'
 
-function Tile({ p, idx, style }) {
+function HeartBadge({ pid, liked, onClick }) {
+  return (
+    <div
+      data-heart={pid}
+      role="button"
+      aria-pressed={liked}
+      aria-label={liked ? 'Quitar de wishlist' : 'Agregar a wishlist'}
+      onClick={onClick ? (e) => { e.stopPropagation(); onClick() } : undefined}
+      style={{
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        zIndex: 2,
+        width: 26,
+        height: 26,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 13,
+        background: liked ? T.ink : 'rgba(255,255,255,0.88)',
+        color: liked ? '#fff' : T.ink,
+        cursor: 'pointer',
+      }}
+    >
+      {liked ? '♥' : '♡'}
+    </div>
+  )
+}
+
+function Tile({ p, pid, style, liked, onOpen, onToggleHeart }) {
   const b = BRANDS[p.brand]
   const { ref, onPointerMove, onPointerLeave } = useTilt(6)
   return (
     <div
-      data-idx={idx}
+      data-idx={pid}
       className="pac-tile"
       style={style}
+      onClick={onOpen}
     >
       <div
         ref={ref}
@@ -26,6 +57,7 @@ function Tile({ p, idx, style }) {
           height: '100%',
         }}
       >
+        <HeartBadge pid={pid} liked={liked} onClick={onToggleHeart} />
         <img
           src={cdnResize(p.img, 460)}
           alt={p.name}
@@ -88,30 +120,48 @@ function Tile({ p, idx, style }) {
   )
 }
 
-function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, gap = 14, onTile }) {
-  const list = PRODUCTS
+// Virtualized infinite drag grid — only mounts tiles near the viewport (+small
+// buffer) instead of pre-rendering the whole catalog as one giant translated
+// sheet. `cols` sets the horizontal wallpaper-repeat period, `rows` sets the
+// vertical period (Lookbook passes ceil(catalog/cols) so every item gets a
+// unique cell, same coverage as before — just rendered on demand).
+function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, gap = 14, onTile, list: listProp }) {
+  const list = listProp || PRODUCTS
+  const { liked, toggle } = useWishlist()
   const colStep = tileW + gap
   const rowStep = tileH + gap
-  const blockW = cols * colStep
-  const blockH = rows * rowStep
+  const totalRows = Math.max(rows, 1)
 
   const vpRef = useRef(null)
   const wrapRef = useRef(null)
   const onTileRef = useRef(onTile)
   onTileRef.current = onTile
-  const off = useRef({ x: -blockW / 4, y: -blockH / 4 })
+  const toggleRef = useRef(toggle)
+  toggleRef.current = toggle
+
+  const originRef = useRef({ col: 0, row: 0 })
+  const [origin, setOrigin] = useState(originRef.current)
+  const sub = useRef({ x: 0, y: 0 })
   const vel = useRef({ x: 0, y: 0 })
   const drag = useRef(null)
   const raf = useRef(0)
 
   const paint = () => {
-    let x = off.current.x % blockW
-    if (x > 0) x -= blockW
-    let y = off.current.y % blockH
-    if (y > 0) y -= blockH
     if (wrapRef.current) {
-      wrapRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`
+      wrapRef.current.style.transform = `translate3d(${sub.current.x}px, ${sub.current.y}px, 0)`
     }
+  }
+
+  // Keep sub-pixel offset bounded to one cell — anything beyond that shifts
+  // the integer origin instead, which is what triggers remounting the
+  // (small, fixed-size) visible tile window.
+  const settle = () => {
+    let shifted = false
+    while (sub.current.x > colStep) { originRef.current.col -= 1; sub.current.x -= colStep; shifted = true }
+    while (sub.current.x < -colStep) { originRef.current.col += 1; sub.current.x += colStep; shifted = true }
+    while (sub.current.y > rowStep) { originRef.current.row -= 1; sub.current.y -= rowStep; shifted = true }
+    while (sub.current.y < -rowStep) { originRef.current.row += 1; sub.current.y += rowStep; shifted = true }
+    if (shifted) setOrigin({ ...originRef.current })
   }
 
   useEffect(() => {
@@ -134,10 +184,11 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
       const dy = e.clientY - drag.current.y
       drag.current.x = e.clientX
       drag.current.y = e.clientY
-      off.current.x += dx
-      off.current.y += dy
+      sub.current.x += dx
+      sub.current.y += dy
       vel.current = { x: dx, y: dy }
       paint()
+      settle()
     }
 
     const onUp = (e) => {
@@ -146,19 +197,25 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
         (e.clientX ?? drag.current.x) - drag.current.sx,
         (e.clientY ?? drag.current.y) - drag.current.sy
       )
-      if (moved < 6 && Date.now() - drag.current.t < 400 && onTileRef.current) {
+      if (moved < 6 && Date.now() - drag.current.t < 400) {
         const hit = document.elementFromPoint(e.clientX, e.clientY)
-        const tile = hit && hit.closest && hit.closest('[data-idx]')
-        if (tile) onTileRef.current(PRODUCTS[+tile.dataset.idx])
+        const heart = hit && hit.closest && hit.closest('[data-heart]')
+        if (heart) {
+          toggleRef.current(+heart.dataset.heart)
+        } else {
+          const tile = hit && hit.closest && hit.closest('[data-idx]')
+          if (tile && onTileRef.current) onTileRef.current(PRODUCTS[+tile.dataset.idx])
+        }
       }
       drag.current = null
       el.style.cursor = 'grab'
       const decay = () => {
         vel.current.x *= 0.91
         vel.current.y *= 0.91
-        off.current.x += vel.current.x
-        off.current.y += vel.current.y
+        sub.current.x += vel.current.x
+        sub.current.y += vel.current.y
         paint()
+        settle()
         if (Math.abs(vel.current.x) > 0.3 || Math.abs(vel.current.y) > 0.3) {
           raf.current = requestAnimationFrame(decay)
         }
@@ -177,47 +234,41 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
     }
   }, [])
 
-  const renderBlock = (ariaHidden) => (
-    <div
-      aria-hidden={ariaHidden || undefined}
-      style={{ position: 'relative', width: blockW, height: blockH }}
-    >
-      {Array.from({ length: cols }).map((_, c) => (
-        <div
-          key={c}
+  const bufC = 2
+  const bufR = 2
+  const visCols = Math.ceil(vw / colStep) + bufC * 2
+  const visRows = Math.ceil(vh / rowStep) + bufR * 2 + 1
+
+  const tiles = []
+  for (let c = -bufC; c < visCols - bufC; c++) {
+    const col = origin.col + c
+    const lc = ((col % cols) + cols) % cols
+    const oddCol = (((col % 2) + 2) % 2) === 1
+    const x = c * colStep
+    for (let r = -bufR; r < visRows - bufR; r++) {
+      const row = origin.row + r
+      const lr = ((row % totalRows) + totalRows) % totalRows
+      const localIdx = (lc * totalRows + lr) % list.length
+      const item = list[localIdx]
+      const pid = PRODUCTS.indexOf(item)
+      const y = r * rowStep + (oddCol ? rowStep / 2 : 0)
+      tiles.push(
+        <Tile
+          key={`${col}:${row}`}
+          p={item}
+          pid={pid}
+          liked={liked.has(pid)}
           style={{
             position: 'absolute',
-            left: c * colStep,
-            top: 0,
+            left: x,
+            top: y,
             width: tileW,
-            transform: c % 2 ? `translateY(${rowStep / 2}px)` : 'none',
-            contain: 'strict',
-            height: (rows + 1) * rowStep,
+            height: tileH,
           }}
-        >
-          {Array.from({ length: rows + 1 }).map((_, r) => {
-            const idx = (c * rows + r) % list.length
-            const delay = ((c + r) % 7) * 45
-            return (
-              <Tile
-                key={r}
-                p={list[idx]}
-                idx={idx}
-                style={{
-                  position: 'absolute',
-                  top: r * rowStep,
-                  left: 0,
-                  width: tileW,
-                  height: tileH,
-                  animation: `pac-scale-in 420ms cubic-bezier(.22,.61,.36,1) ${delay}ms backwards`,
-                }}
-              />
-            )
-          })}
-        </div>
-      ))}
-    </div>
-  )
+        />
+      )
+    }
+  }
 
   return (
     <div
@@ -239,23 +290,75 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
           position: 'absolute',
           top: 0,
           left: 0,
-          display: 'grid',
-          gridTemplateColumns: 'max-content max-content',
-          gridAutoRows: 'max-content',
           willChange: 'transform',
         }}
       >
-        {renderBlock(false)}
-        {renderBlock(true)}
-        {renderBlock(true)}
-        {renderBlock(true)}
+        {tiles}
       </div>
-
     </div>
   )
 }
 
-export default function Lookbook({ onProduct }) {
+// Plain, non-repeating grid — used for curated subsets (e.g. wishlist) where
+// tiling the same handful of items into an infinite drag-wallpaper would look broken.
+function StaticGrid({ items, onTile }) {
+  const { liked, toggle } = useWishlist()
+  return (
+    <div style={{
+      height: '100%',
+      overflowY: 'auto',
+      boxSizing: 'border-box',
+      padding: '96px 40px 40px',
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 26,
+      justifyContent: 'center',
+      alignContent: 'flex-start',
+    }}>
+      {items.map((p) => {
+        const pid = PRODUCTS.indexOf(p)
+        return (
+          <Tile
+            key={pid}
+            p={p}
+            pid={pid}
+            liked={liked.has(pid)}
+            onOpen={() => onTile(p)}
+            onToggleHeart={() => toggle(pid)}
+            style={{ width: 230, height: 320, cursor: 'pointer', animation: 'pac-scale-in 320ms cubic-bezier(.22,.61,.36,1) backwards' }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+export default function Lookbook({ onProduct, list, label, emptyTitle, emptySub }) {
+  const items = list ?? PRODUCTS
+
+  if (items.length === 0) {
+    return (
+      <div className="pac-viewport" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        fontFamily: T.font,
+        fontWeight: 700,
+        padding: '0 32px',
+      }}>
+        <div style={{ fontSize: 56, marginBottom: 8 }}>♡</div>
+        <div style={{ fontSize: 30, letterSpacing: -0.5, textTransform: 'uppercase' }}>
+          {emptyTitle || 'Tu wishlist está vacía'}
+        </div>
+        <div style={{ fontSize: 13, letterSpacing: 1, color: T.ink2, textTransform: 'uppercase', marginTop: 14, maxWidth: 420, lineHeight: 1.6, fontWeight: 500 }}>
+          {emptySub || 'Abre un lookbook y toca el corazón ♥ en cualquier prenda para guardarla aquí.'}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="pac-viewport" style={{
       overflow: 'hidden',
@@ -263,16 +366,21 @@ export default function Lookbook({ onProduct }) {
       fontFamily: T.font,
       fontWeight: 700,
     }}>
-      <DragLookbook
-        vw={typeof window !== 'undefined' ? window.innerWidth : 1920}
-        vh={typeof window !== 'undefined' ? window.innerHeight : 1080}
-        tileW={230}
-        tileH={320}
-        cols={6}
-        rows={4}
-        gap={26}
-        onTile={onProduct}
-      />
+      {list != null ? (
+        <StaticGrid items={items} onTile={onProduct} />
+      ) : (
+        <DragLookbook
+          vw={typeof window !== 'undefined' ? window.innerWidth : 1920}
+          vh={typeof window !== 'undefined' ? window.innerHeight : 1080}
+          tileW={230}
+          tileH={320}
+          cols={6}
+          rows={Math.ceil(items.length / 6)}
+          gap={26}
+          onTile={onProduct}
+          list={items}
+        />
+      )}
 
       {/* Brand mark — floats over gallery, no background */}
       <div style={{
@@ -293,7 +401,7 @@ export default function Lookbook({ onProduct }) {
           mixBlendMode: 'difference',
           animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)',
         }}>
-          PRET-A-CL
+          {label || 'PRET-A-CL'}
         </div>
       </div>
     </div>
