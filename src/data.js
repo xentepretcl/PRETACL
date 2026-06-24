@@ -393,7 +393,7 @@ const RAW_PRODUCTS = [
   { brand: 'lalalou', name: 'CAMISA POPELINA NEGRA', price: '$129.990', img: 'https://cdn.shopify.com/s/files/1/0574/2850/8765/files/CAMISALALALOUPOPELINANEGRA_109036.jpg', url: 'https://lalalou.cl/products/camisera-lalalou-popelina-negra' },
   { brand: 'lalalou', name: 'PANTALÓN ISABEL COTELÉ VERDE', price: '$99.990', img: 'https://cdn.shopify.com/s/files/1/0574/2850/8765/files/PANTALONISABELCOTELEVERDE_109334.jpg', url: 'https://lalalou.cl/products/pantalon-isabel-cotele-verde' },
   { brand: 'lalalou', name: 'JEANS BALLOON', price: '$85.990', img: 'https://cdn.shopify.com/s/files/1/0574/2850/8765/files/JEANS_BALLOON_109409.jpg', url: 'https://lalalou.cl/products/jeans-balloon' },
-  { brand: 'lalalou', name: 'JEANS RIVIERA CELESTE', price: '$85.990', img: 'https://cdn.shopify.com/s/files/1/0574/2850/8765/files/JEANS_RIVIERA_CELESTE_109427.jpg', url: 'https://lalalou.cl/products/jeans-riviera-celeste' },
+  { brand: 'lalalou', name: 'JEANS RIVIERA CELESTE', price: '$85.990', img: 'https://lalalou.cl/cdn/shop/files/JEANS_RIVIERA_CELESTE_109248.jpg?v=1774558684', url: 'https://lalalou.cl/products/jeans-riviera-celeste' },
 
   // ── MUNAY SISTERS ─────────────────────────────────────────────────────────
   { brand: 'munay', name: 'PANTALÓN DENIM BALLOON BLANCO', price: '$130.000', img: 'https://cdn.shopify.com/s/files/1/0295/8924/1989/files/ChatGPTImage5jun2026_01_29_50p.m._1.png?v=1780680942', url: 'https://munaysisters.com/products/pantalon-denim-balloon-blanco' },
