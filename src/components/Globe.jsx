@@ -492,26 +492,29 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
 
       {sel && (
         <div className="pac-lb-foot" style={{ height: 132, flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.14)', display: 'flex', alignItems: 'center', gap: S.md, padding: '0 24px', background: '#fff', overflow: 'hidden' }}>
-          <div key={sel.id} style={{ display: 'flex', alignItems: 'center', gap: S.md, width: '100%', animation: 'pac-fade-up 220ms cubic-bezier(.22,.61,.36,1)' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>Nº {String(selIdx + 1).padStart(2, '0')}</span>
+          <div key={sel.id} className="pac-lb-foot-inner" style={{ display: 'flex', alignItems: 'center', gap: S.md, width: '100%', animation: 'pac-fade-up 220ms cubic-bezier(.22,.61,.36,1)' }}>
+            <span className="pac-lb-foot-idx" style={{ fontSize: 12, fontWeight: 700, letterSpacing: 2, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>Nº {String(selIdx + 1).padStart(2, '0')}</span>
             <div className="pac-lb-foot-thumb" style={{ width: 88, height: 100, flexShrink: 0, background: '#ececef', overflow: 'hidden' }}>
               {sel.img && <img src={cdnResize(sel.img, 180)} alt={sel.n} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="pac-lb-foot-brand" style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#0a0a0a', marginBottom: 4 }}>{sel.t} · {CAT_META[sel.c].label}</div>
+            <div className="pac-lb-foot-info" style={{ flex: 1, minWidth: 0 }}>
+              <div className="pac-lb-foot-brand" style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: '#0a0a0a', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sel.t} · {CAT_META[sel.c].label}</div>
               <div className="pac-lb-foot-name" style={{ fontSize: 16, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3, lineHeight: 1.2, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sel.n}</div>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>{sel.p}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap' }}>{sel.p}</div>
             </div>
-            {sel.url && (
-              <a href={sel.url} target="_blank" rel="noopener noreferrer" className="pac-lb-foot-cta"
-                style={{ all: 'unset', cursor: 'pointer', padding: '13px 24px', background: '#0a0a0a', color: '#fff', fontWeight: 700, fontSize: 13, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {sel.p ? 'COMPRAR' : 'VER'} ↗ <span style={{ color: '#0a0a0a', marginLeft: 8 }}>{sel.t}</span>
-              </a>
-            )}
-            <button onClick={() => toggle(sel.id)} aria-pressed={liked.has(sel.id)} aria-label={liked.has(sel.id) ? 'Quitar de wishlist' : 'Agregar a wishlist'}
-              style={{ all: 'unset', cursor: 'pointer', width: 50, height: 50, flexShrink: 0, border: `1px solid ${liked.has(sel.id) ? '#0a0a0a' : 'rgba(0,0,0,0.3)'}`, background: liked.has(sel.id) ? '#0a0a0a' : 'transparent', color: liked.has(sel.id) ? '#fff' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-              {liked.has(sel.id) ? '♥' : '♡'}
-            </button>
+            <div className="pac-lb-foot-actions" style={{ display: 'flex', alignItems: 'center', gap: S.xs, flexShrink: 0 }}>
+              {sel.url && (
+                <a href={sel.url} target="_blank" rel="noopener noreferrer" className="pac-lb-foot-cta"
+                  style={{ all: 'unset', cursor: 'pointer', padding: '13px 24px', background: '#0a0a0a', color: '#fff', fontWeight: 700, fontSize: 13, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: FONT, whiteSpace: 'nowrap', flexShrink: 0, textAlign: 'center' }}>
+                  {sel.p ? 'COMPRAR' : 'VER'} ↗ <span style={{ color: 'rgba(255,255,255,0.65)', marginLeft: 8 }}>{sel.t}</span>
+                </a>
+              )}
+              <button onClick={() => toggle(sel.id)} aria-pressed={liked.has(sel.id)} aria-label={liked.has(sel.id) ? 'Quitar de wishlist' : 'Agregar a wishlist'}
+                className="pac-lb-foot-heart"
+                style={{ all: 'unset', cursor: 'pointer', width: 50, height: 50, flexShrink: 0, border: `1px solid ${liked.has(sel.id) ? '#0a0a0a' : 'rgba(0,0,0,0.3)'}`, background: liked.has(sel.id) ? '#0a0a0a' : 'transparent', color: liked.has(sel.id) ? '#fff' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                {liked.has(sel.id) ? '♥' : '♡'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -625,11 +628,11 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
 
       {/* Header band — brand mark + tagline (left), coordinates + globe index + date (right) */}
       <div className="pac-headerband" style={{ position: 'absolute', top: 56, left: 56, right: 56, height: 64, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'none', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
-        <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 32, lineHeight: 0.9, letterSpacing: 0.5 }}>
+        <span className="pac-headerband-brand" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 32, lineHeight: 0.9, letterSpacing: 0.5 }}>
           PRET-A-CL<sup style={{ fontSize: 14 }}>©</sup>
         </span>
         <div className="pac-headerband-meta" style={{ display: 'flex', alignItems: 'baseline', gap: 26, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}>
-          <span style={{ color: '#0a0a0a' }}>SANTIAGO · 33°27′S 70°39′O</span>
+          <span className="pac-headerband-coords" style={{ color: '#0a0a0a' }}>SANTIAGO · 33°27′S 70°39′O</span>
           <button onClick={handleAccountClick} className="pac-cta"
             style={{ all: 'unset', pointerEvents: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 13px', fontWeight: 700, fontFamily: FONT, color: '#fff', background: '#0a0a0a' }}>
             CUENTA

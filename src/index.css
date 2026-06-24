@@ -150,7 +150,7 @@ button, a {
 @media (max-width: 767px) {
   .pac-grid,
   .pac-headerband-tag,
-  .pac-headerband-meta,
+  .pac-headerband-coords,
   .pac-footerband {
     display: none !important;
   }
@@ -159,6 +159,9 @@ button, a {
     left: 20px !important;
     right: 20px !important;
     height: auto !important;
+  }
+  .pac-headerband-brand {
+    font-size: 22px !important;
   }
   .pac-editorial {
     top: 60px;
@@ -202,6 +205,13 @@ button, a {
     padding: 12px 14px !important;
     gap: 10px !important;
   }
+  .pac-lb-foot-inner {
+    flex-wrap: wrap !important;
+    row-gap: 10px !important;
+  }
+  .pac-lb-foot-idx {
+    display: none !important;
+  }
   .pac-lb-foot-thumb {
     width: 60px !important;
     height: 70px !important;
@@ -209,9 +219,20 @@ button, a {
   .pac-lb-foot-name {
     font-size: 13px !important;
   }
+  .pac-lb-foot-actions {
+    flex: 1 1 100% !important;
+    justify-content: space-between !important;
+  }
   .pac-lb-foot-cta {
+    flex: 1 !important;
     padding: 10px 14px !important;
     font-size: 11px !important;
+    justify-content: center !important;
+    display: flex !important;
+  }
+  .pac-lb-foot-heart {
+    width: 42px !important;
+    height: 42px !important;
   }
   .pac-hovercard {
     right: 14px !important;
