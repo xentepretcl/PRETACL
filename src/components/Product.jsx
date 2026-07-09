@@ -1,8 +1,103 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { BRANDS, PRODUCTS } from '../data'
 import { T, S } from '../tokens'
 import { cdnResize } from '../imgUtil'
 import { useWishlist } from '../WishlistContext'
+import { useAuth } from '../AuthContext'
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
+  useEffect(() => {
+    const onResize = () => setMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return mobile
+}
+
+function LoginHint({ onLogin, font }) {
+  return (
+    <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#0a0a0a', color: '#fff', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: font, animation: 'pac-fade-up 200ms ease-out' }}>
+      <span style={{ fontSize: 12, letterSpacing: 0.5 }}>Inicia sesión para guardar prendas</span>
+      <button onClick={onLogin} style={{ all: 'unset', cursor: 'pointer', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', textDecoration: 'underline', textUnderlineOffset: 3 }}>INGRESAR →</button>
+    </div>
+  )
+}
+
+// Mobile gets its own single-screen layout (photo strip + scrollable info +
+// sticky CTA) instead of the desktop 3-column grid stacked as 3 full-height
+// sections — that made buying/wishlist-ing on mobile require scrolling past
+// two full viewports first.
+function MobileProduct({ p, b, photos, soldOut, pid, isLiked, toggle, logoFailed, setLogoFailed }) {
+  return (
+    <div style={{ height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: T.font, fontWeight: 700, color: T.ink, background: T.paper }}>
+      <div style={{ position: 'relative', height: '44vh', minHeight: 300, flex: 'none', borderBottom: `1px solid ${T.hair}`, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', height: '100%', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}>
+          {photos.map((src, i) => (
+            <div key={i} style={{ position: 'relative', width: '100%', height: '100%', flex: 'none', scrollSnapAlign: 'start', background: '#e8e8e6' }}>
+              <img
+                src={cdnResize(src, 760)}
+                alt={`${p.name} ${i + 1}`}
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+                onError={(e) => { e.currentTarget.style.display = 'none' }}
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none' }}
+              />
+            </div>
+          ))}
+        </div>
+        {photos.length > 1 && (
+          <div style={{ position: 'absolute', bottom: 10, right: 12, fontSize: 9, fontWeight: 500, letterSpacing: 1, background: 'rgba(255,255,255,0.9)', padding: '3px 8px' }}>
+            0{photos.length} FOTOS →
+          </div>
+        )}
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 22px' }}>
+        <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1.5, color: T.ink2, textTransform: 'uppercase' }}>MARCA</div>
+
+        {b.logo && !logoFailed ? (
+          <div style={{ display: 'flex', alignItems: 'center', height: 40, marginTop: 6, padding: b.logoDark ? '8px 14px' : 0, background: b.logoDark ? T.ink : 'transparent' }}>
+            <img src={b.logo} alt={b.name} onError={() => setLogoFailed(true)} style={{ maxHeight: '100%', maxWidth: 160, objectFit: 'contain' }} />
+          </div>
+        ) : (
+          <div style={{ fontSize: 22, letterSpacing: -0.4, fontWeight: 700, textTransform: 'uppercase', marginTop: 4 }}>{b.name}</div>
+        )}
+
+        <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1, color: T.ink2, textTransform: 'uppercase', marginTop: 4 }}>{b.meta}</div>
+        <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.35, letterSpacing: 0.2, textTransform: 'uppercase' }}>{b.vision}</div>
+        <div style={{ marginTop: 8, fontSize: 11, fontWeight: 500, lineHeight: 1.55, color: T.ink2, letterSpacing: 0.3 }}>{b.history}</div>
+
+        <a href={b.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 10, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', textDecoration: 'underline', textUnderlineOffset: 4, color: 'inherit' }}>
+          VER PERFIL DE LA MARCA →
+        </a>
+
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${T.hair}` }}>
+          <div style={{ fontSize: 24, letterSpacing: -0.4, lineHeight: 1.05, textTransform: 'uppercase' }}>{p.name}</div>
+          <div style={{ fontSize: 17, marginTop: 8, letterSpacing: 0.3, color: soldOut ? T.ink2 : T.ink }}>
+            {soldOut ? 'AGOTADO' : `${p.price} CLP`}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ flex: 'none', borderTop: `1px solid ${T.hair}`, padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom))', background: T.paper, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
+          <button className="pac-cta" style={{ width: '100%', padding: '15px', background: T.ink, color: T.paper, border: `1px solid ${T.hair}`, fontFamily: T.font, fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer' }}>
+            {soldOut ? `VER EN ${b.store} ↗` : `COMPRAR EN ${b.store} ↗`}
+          </button>
+        </a>
+        <button
+          className="pac-wishlist"
+          onClick={() => toggle(pid)}
+          aria-pressed={isLiked}
+          style={{ width: '100%', padding: '13px', background: isLiked ? T.ink : T.paper, color: isLiked ? T.paper : T.ink, border: `1px solid ${T.hairStrong}`, fontFamily: T.font, fontWeight: 700, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer' }}>
+          {isLiked ? '♥ EN WISHLIST' : '♡ WISHLIST'}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function Product({ product }) {
   const p = product || PRODUCTS[5]
@@ -10,8 +105,19 @@ export default function Product({ product }) {
   const photos = [p.img, p.img2].filter(Boolean)
   const soldOut = p.price === 'AGOTADO'
   const { liked, toggle } = useWishlist()
+  const { user, signInWithGoogle } = useAuth()
   const pid = PRODUCTS.indexOf(p)
   const isLiked = liked.has(pid)
+  const mobile = useIsMobile()
+
+  const [loginHint, setLoginHint] = useState(false)
+  const loginHintTimer = useRef(null)
+  const requireAuth = useCallback((fn) => {
+    if (user) { fn(); return }
+    setLoginHint(true)
+    clearTimeout(loginHintTimer.current)
+    loginHintTimer.current = setTimeout(() => setLoginHint(false), 3500)
+  }, [user])
 
   const scrollRef = useRef(null)
   const dragRef = useRef(null)
@@ -47,6 +153,19 @@ export default function Product({ product }) {
   const onUp = () => {
     dragRef.current = null
     if (scrollRef.current) scrollRef.current.style.cursor = 'grab'
+  }
+
+  if (mobile) {
+    return (
+      <div style={{ position: 'relative' }}>
+        <MobileProduct
+          p={p} b={b} photos={photos} soldOut={soldOut} pid={pid}
+          isLiked={isLiked} toggle={(id) => requireAuth(() => toggle(id))}
+          logoFailed={logoFailed} setLogoFailed={setLogoFailed}
+        />
+        {loginHint && <LoginHint onLogin={signInWithGoogle} font={T.font} />}
+      </div>
+    )
   }
 
   return (
@@ -173,12 +292,13 @@ export default function Product({ product }) {
           onPointerCancel={onUp}
           style={{
             height: '100%',
-            overflowY: 'auto',
-            cursor: 'grab',
+            overflowY: photos.length === 1 ? 'hidden' : 'auto',
+            cursor: photos.length === 1 ? 'default' : 'grab',
             padding: S.lg,
             display: 'flex',
             flexDirection: 'column',
             gap: 20,
+            justifyContent: photos.length === 1 ? 'center' : 'flex-start',
           }}
         >
           {photos.map((src, i) => (
@@ -283,7 +403,7 @@ export default function Product({ product }) {
 
         <button
           className="pac-wishlist"
-          onClick={() => toggle(pid)}
+          onClick={() => requireAuth(() => toggle(pid))}
           aria-pressed={isLiked}
           style={{
             width: '100%',
@@ -302,6 +422,7 @@ export default function Product({ product }) {
           {isLiked ? '♥ EN WISHLIST' : '♡ WISHLIST'}
         </button>
       </div>
+      {loginHint && <LoginHint onLogin={signInWithGoogle} font={T.font} />}
     </div>
   )
 }

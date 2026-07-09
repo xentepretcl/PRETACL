@@ -23,11 +23,16 @@
 
 html, body, #root {
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   font-family: "Alte Haas Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   background: #ffffff;
   color: #0a0a0a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
 }
 
 button {
@@ -95,6 +100,7 @@ button, a {
 
 .pac-catbtn { transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms cubic-bezier(.22,.61,.36,1); }
 .pac-catbtn:hover { border-color: #000 !important; transform: translateX(5px); }
+.pac-catbtn:hover .pac-catbtn-label { font-weight: 700 !important; color: #0a0a0a !important; }
 .pac-catbtn:active { transform: scale(0.97); }
 
 .pac-cta { transition: transform 150ms ease, opacity 150ms ease; }
@@ -127,14 +133,15 @@ button, a {
 
 .pac-editorial {
   position: absolute;
-  top: 152px;
+  top: 116px;
   left: 56px;
   bottom: 144px;
   width: min(34vw, 460px);
   z-index: 10;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: clamp(20px, 3vh, 48px);
   overflow-y: auto;
 }
 .pac-hero-display {
@@ -147,6 +154,53 @@ button, a {
   width: 100%;
 }
 
+.pac-catbtn-label {
+  font-size: 20px;
+}
+
+/* Short viewport — laptops with browser chrome */
+@media (max-height: 820px) and (min-width: 768px) {
+  .pac-editorial {
+    top: 112px;
+    bottom: 64px;
+  }
+  .pac-hero-display {
+    font-size: 52px;
+    letter-spacing: -2px;
+  }
+  .pac-catbtn-label {
+    font-size: 16px;
+  }
+}
+
+@media (max-height: 730px) and (min-width: 768px) {
+  .pac-editorial {
+    top: 104px;
+    bottom: 56px;
+  }
+  .pac-hero-display {
+    font-size: 44px;
+    letter-spacing: -2px;
+  }
+  .pac-catbtn-label {
+    font-size: 14px;
+  }
+}
+
+@media (max-height: 680px) and (min-width: 768px) {
+  .pac-editorial {
+    top: 100px;
+    bottom: 56px;
+  }
+  .pac-hero-display {
+    font-size: 36px;
+    letter-spacing: -1.5px;
+  }
+  .pac-catbtn-label {
+    font-size: 13px;
+  }
+}
+
 @media (max-width: 767px) {
   .pac-grid,
   .pac-footerband {
@@ -157,28 +211,6 @@ button, a {
   }
   .pac-chiprow::-webkit-scrollbar {
     display: none;
-  }
-  .pac-product-grid {
-    grid-template-columns: 1fr !important;
-    grid-auto-rows: min-content;
-    overflow-y: auto !important;
-    height: 100vh;
-    height: 100dvh;
-  }
-  .pac-product-col {
-    border-right: none !important;
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-  .pac-product-brand {
-    font-size: clamp(30px, 11vw, 44px) !important;
-  }
-  .pac-product-name {
-    font-size: clamp(22px, 7vw, 34px) !important;
-  }
-  .pac-product-photo {
-    height: 70vw !important;
-    min-height: 320px;
   }
   .pac-hovercard {
     right: 14px !important;

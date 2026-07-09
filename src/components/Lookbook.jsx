@@ -5,6 +5,16 @@ import { cdnResize } from '../imgUtil'
 import { useTilt } from '../useTilt'
 import { useWishlist } from '../WishlistContext'
 
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
+  useEffect(() => {
+    const onResize = () => setMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return mobile
+}
+
 function HeartBadge({ pid, liked, onClick }) {
   return (
     <div
@@ -303,15 +313,19 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
 // tiling the same handful of items into an infinite drag-wallpaper would look broken.
 function StaticGrid({ items, onTile }) {
   const { liked, toggle } = useWishlist()
+  const mobile = useIsMobile()
+  const tileW = mobile ? 185 : 230
+  const tileH = mobile ? 248 : 320
+  const gap = mobile ? 8 : 26
   return (
     <div style={{
       height: '100%',
       overflowY: 'auto',
       boxSizing: 'border-box',
-      padding: '96px 40px 40px',
+      padding: mobile ? '76px 14px 24px' : '96px 40px 40px',
       display: 'flex',
       flexWrap: 'wrap',
-      gap: 26,
+      gap,
       justifyContent: 'center',
       alignContent: 'flex-start',
     }}>
@@ -325,7 +339,7 @@ function StaticGrid({ items, onTile }) {
             liked={liked.has(pid)}
             onOpen={() => onTile(p)}
             onToggleHeart={() => toggle(pid)}
-            style={{ width: 230, height: 320, cursor: 'pointer', animation: 'pac-scale-in 320ms cubic-bezier(.22,.61,.36,1) backwards' }}
+            style={{ width: tileW, height: tileH, cursor: 'pointer', animation: 'pac-scale-in 320ms cubic-bezier(.22,.61,.36,1) backwards' }}
           />
         )
       })}
@@ -335,6 +349,11 @@ function StaticGrid({ items, onTile }) {
 
 export default function Lookbook({ onProduct, list, label, emptyTitle, emptySub }) {
   const items = list ?? PRODUCTS
+  const mobile = useIsMobile()
+  const dragTileW = mobile ? 185 : 230
+  const dragTileH = mobile ? 248 : 320
+  const dragGap = mobile ? 8 : 26
+  const dragCols = mobile ? 4 : 6
 
   if (items.length === 0) {
     return (
@@ -372,15 +391,32 @@ export default function Lookbook({ onProduct, list, label, emptyTitle, emptySub 
         <DragLookbook
           vw={typeof window !== 'undefined' ? window.innerWidth : 1920}
           vh={typeof window !== 'undefined' ? window.innerHeight : 1080}
-          tileW={230}
-          tileH={320}
-          cols={6}
-          rows={Math.ceil(items.length / 6)}
-          gap={26}
+          tileW={dragTileW}
+          tileH={dragTileH}
+          cols={dragCols}
+          rows={Math.ceil(items.length / dragCols)}
+          gap={dragGap}
           onTile={onProduct}
           list={items}
         />
       )}
+
+      {/* Glass edges — same frosted blur as the category lookbook, so both feel like one surface */}
+      {mobile && [
+        { left: 0, top: 0, bottom: 0, width: 56, mask: 'linear-gradient(90deg, black, transparent)' },
+        { right: 0, top: 0, bottom: 0, width: 56, mask: 'linear-gradient(270deg, black, transparent)' },
+        { left: 0, right: 0, top: 0, height: 56, mask: 'linear-gradient(180deg, black, transparent)' },
+        { left: 0, right: 0, bottom: 0, height: 56, mask: 'linear-gradient(0deg, black, transparent)' },
+      ].map((s, i) => (
+        <div key={i} aria-hidden="true" style={{
+          position: 'absolute', pointerEvents: 'none',
+          left: s.left, right: s.right, top: s.top, bottom: s.bottom,
+          width: s.width, height: s.height,
+          backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+          background: 'rgba(255,255,255,0.05)',
+          maskImage: s.mask, WebkitMaskImage: s.mask,
+        }} />
+      ))}
 
       {/* Brand mark — floats over gallery, no background */}
       <div style={{

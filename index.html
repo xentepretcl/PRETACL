@@ -5,9 +5,37 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preload" href="/fonts/AlteHaasGroteskRegular.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/AlteHaasGroteskBold.woff2" as="font" type="font/woff2" crossorigin />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="PRET-A-CL — plataforma de descubrimiento de moda independiente chilena. No es retail, es culto." />
     <title>PRET-A-CL — Moda Independiente Chilena</title>
+  <script>
+    (function (m, a, z, e) {
+      var s, t, u, v;
+      try {
+        t = m.sessionStorage.getItem('maze-us');
+      } catch (err) {}
+
+      if (!t) {
+        t = new Date().getTime();
+        try {
+          m.sessionStorage.setItem('maze-us', t);
+        } catch (err) {}
+      }
+
+      u = document.currentScript || (function () {
+        var w = document.getElementsByTagName('script');
+        return w[w.length - 1];
+      })();
+      v = u && u.nonce;
+
+      s = a.createElement('script');
+      s.src = z + '?apiKey=' + e;
+      s.async = true;
+      if (v) s.setAttribute('nonce', v);
+      a.getElementsByTagName('head')[0].appendChild(s);
+      m.mazeUniversalSnippetApiKey = e;
+    })(window, document, 'https://snippet.maze.co/maze-universal-loader.js', '2322096f-948f-4328-a38b-a2bc8f970bfc');
+  </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1,5 +1,5 @@
 import { useState, lazy, Suspense } from 'react'
-import Globe from './components/Globe'
+import GlobeIntro from './components/GlobeIntro'
 import { T } from './tokens'
 import { PRODUCTS } from './data'
 import { useWishlist } from './WishlistContext'
@@ -60,8 +60,8 @@ export default function App() {
 
   return (
     <div className="pac-viewport" style={{ position: 'relative', overflow: 'hidden' }}>
-      {/* Base layer: Globe home */}
-      <Globe
+      {/* Base layer: Globe intro + home */}
+      <GlobeIntro
         onOpenLookbook={() => setView('lookbook')}
         onOpenWishlist={() => setView('wishlist')}
         paused={!!view || !!product}

@@ -85,20 +85,7 @@ function fibonacci(n) {
 }
 
 // ---- Decorative instrument grid: column hairlines, frame, rule lines ----
-function GridFrame() {
-  return (
-    <div className="pac-grid" aria-hidden="true" style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-      <div style={{
-        position: 'absolute', top: 32, left: 32, right: 32, bottom: 32,
-        border: '1px solid rgba(0,0,0,0.20)',
-        backgroundImage: 'linear-gradient(to right, rgba(0,0,0,0.07) 1px, transparent 1px)',
-        backgroundSize: 'calc((100% - 1px)/12) 100%',
-      }} />
-      <div style={{ position: 'absolute', top: 136, left: 32, right: 32, borderTop: '1px solid rgba(0,0,0,0.20)' }} />
-      <div style={{ position: 'absolute', bottom: 128, left: 32, right: 32, borderTop: '1px solid rgba(0,0,0,0.20)' }} />
-    </div>
-  )
-}
+function GridFrame() { return null }
 
 // ---- Globe canvas ----
 function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInteract, paused }) {
@@ -114,30 +101,31 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
   const catsKey = (activeCats || []).join(',')
   useEffect(() => { stRef.current.anim = 0; stRef.current.activeCats = activeCats || [] }, [catsKey])
 
-  const dots = useMemo(() => fibonacci(900), [])
+  // Mobile's sphere renders at roughly half the diameter of desktop's — the same
+  // 900-dot field at that size reads as a muddy gray haze instead of a crisp
+  // instrument texture. Thin it out and shrink dots to match the smaller canvas.
+  const isMobileGlobe = typeof window !== 'undefined' && window.innerWidth < 768
+  const dots = useMemo(() => fibonacci(isMobileGlobe ? 480 : 900), [isMobileGlobe])
   const spikes = useMemo(() => items.map(it => ({ it, v: vecLL(it.lng, it.lat) })), [items])
 
   useEffect(() => {
     const canvas = ref.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
-    let dpr = Math.min(2, window.devicePixelRatio || 1)
+    let dpr = Math.min(4, window.devicePixelRatio || 1)
     let W = window.innerWidth, H = window.innerHeight
     let cx = W / 2, cy = H / 2
     let R0 = Math.min(W, H) / 2.45
 
     function applySize() {
-      dpr = Math.min(2, window.devicePixelRatio || 1)
+      dpr = Math.min(4, window.devicePixelRatio || 1)
       W = window.innerWidth; H = window.innerHeight
       canvas.width = W * dpr; canvas.height = H * dpr
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px'
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       const mobile = W < 768
-      // Mobile: full-bleed globe behind floating top chrome (~70px) and a
-      // bottom dock (~160px) — center a bit above middle, bigger radius
-      // since nothing solid covers it.
       cx = mobile ? W / 2 : W / 2 + 50; cy = mobile ? H * 0.46 : H / 2
-      R0 = Math.min(W, H) / (mobile ? 2.5 : 3.1)
+      R0 = Math.min(W, H) / (mobile ? 2.3 : 3.1)
     }
     applySize()
 
@@ -163,7 +151,7 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
     function hitTest(cx_, cy_) {
       const rect = canvas.getBoundingClientRect()
       const mx = cx_ - rect.left, my = cy_ - rect.top
-      let best = null, bestD = 22
+      let best = null, bestD = 26
       for (const tip of tipsRef.current) {
         const d = Math.hypot(tip.tx - mx, tip.ty - my)
         if (d < bestD) { bestD = d; best = tip }
@@ -219,6 +207,8 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
 
+    const hoverAnims = new Map()
+
     function frame() {
       if (pausedRef.current) { raf = requestAnimationFrame(frame); return }
       const st = stRef.current
@@ -233,17 +223,19 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
 
       ctx.clearRect(0, 0, W, H)
 
-      // Globe disc — flat plate, instrument-grade rather than glossy sphere
+      // Globe disc
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI)
-      ctx.fillStyle = '#ffffff'; ctx.fill()
+      ctx.fillStyle = '#ebebeb'; ctx.fill()
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI)
       ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.stroke()
 
       // Fibonacci dots
+      const dotR = isMobileGlobe ? 0.95 : 1.15
       for (const d of dots) {
         const r = rot(d, cosY, sinY)
         if (r[2] <= 0) continue
         const sx = cx + R * r[0], sy = cy - R * r[1]
-        ctx.beginPath(); ctx.arc(sx, sy, 1.15, 0, 2 * Math.PI)
+        ctx.beginPath(); ctx.arc(sx, sy, dotR, 0, 2 * Math.PI)
         ctx.fillStyle = `rgba(0,0,0,${0.10 + 0.42 * r[2]})`; ctx.fill()
       }
 
@@ -260,8 +252,8 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
         }
         ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke()
       }
-      for (let lat = -60; lat <= 60; lat += 30) drawArc('par', lat, lat === 0 ? 'rgba(0,0,0,0.16)' : 'rgba(0,0,0,0.08)', lat === 0 ? 1.1 : 1)
-      for (let lng = -180; lng < 180; lng += 30) drawArc('mer', lng, 'rgba(0,0,0,0.08)', 1)
+      for (let lat = -60; lat <= 60; lat += 30) drawArc('par', lat, lat === 0 ? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.12)', lat === 0 ? 1.3 : 1.2)
+      for (let lng = -180; lng < 180; lng += 30) drawArc('mer', lng, 'rgba(0,0,0,0.12)', 1.2)
 
       // Sector meridians
       for (const lng of [-90, 0, 90, 180]) {
@@ -272,7 +264,7 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
           const sx = cx + R * r[0], sy = cy - R * r[1]
           if (!started) { ctx.moveTo(sx, sy); started = true } else ctx.lineTo(sx, sy)
         }
-        ctx.strokeStyle = 'rgba(0,0,0,0.14)'; ctx.lineWidth = 1; ctx.stroke()
+        ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1.2; ctx.stroke()
       }
 
       // Product spikes
@@ -284,23 +276,28 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
         const r = rot(sp.v, cosY, sinY)
         if (r[2] <= 0) continue
         const isHover = st.hoverId === sp.it.id
+        const hPrev = hoverAnims.get(sp.it.id) ?? 0
+        const hNext = hPrev + ((isHover ? 1 : 0) - hPrev) * 0.13
+        hoverAnims.set(sp.it.id, hNext)
         const grow = anyFilter ? ease : 1
-        const H = sp.it.h * grow * (anyFilter ? 1.25 : 0.62)
+        const baseScale = anyFilter ? 0.9 : 0.28
+        const hoverScale = anyFilter ? 1.8 : 1.1
+        const H = sp.it.h * grow * (baseScale + (hoverScale - baseScale) * hNext)
         const bx = cx + R * r[0], by = cy - R * r[1]
         const tx = cx + R * r[0] * (1 + H), ty = cy - R * r[1] * (1 + H)
-        tips.push({ id: sp.it.id, cat: sp.it.c, tx, ty })
+        tips.push({ id: sp.it.id, cat: sp.it.c, tx: bx, ty: by })
         const depth = 0.35 + 0.65 * r[2]
         let col, lw, tipR
-        if (isHover) { col = 'rgba(0,0,0,1)'; lw = 2.4; tipR = 3.6 }
-        else if (anyFilter) { col = `rgba(0,0,0,${0.55 * depth + 0.3})`; lw = 1.4; tipR = 2.1 }
+        if (hNext > 0.5) { col = `rgba(0,0,0,${0.6 + 0.4 * hNext})`; lw = 1.2 + 1.2 * hNext; tipR = 1.8 + 2.2 * hNext }
+        else if (anyFilter) { col = `rgba(0,0,0,${0.55 * depth + 0.3})`; lw = 1.2; tipR = 1.8 }
         else { col = `rgba(0,0,0,${0.28 * depth})`; lw = 1; tipR = 1.4 }
         ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(tx, ty)
         ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke()
         ctx.beginPath(); ctx.arc(tx, ty, tipR, 0, 2 * Math.PI)
         ctx.fillStyle = col; ctx.fill()
-        if (isHover) {
-          ctx.beginPath(); ctx.arc(tx, ty, 7, 0, 2 * Math.PI)
-          ctx.strokeStyle = 'rgba(0,0,0,0.8)'; ctx.lineWidth = 1.2; ctx.stroke()
+        if (hNext > 0.05) {
+          ctx.beginPath(); ctx.arc(tx, ty, 4 + 6 * hNext, 0, 2 * Math.PI)
+          ctx.strokeStyle = `rgba(0,0,0,${0.6 * hNext})`; ctx.lineWidth = 1.2; ctx.stroke()
         }
       }
 
@@ -342,7 +339,7 @@ function CatTile({ it, isSel, delay, liked, style }) {
   const { ref, onPointerMove, onPointerLeave } = useTilt(6)
   return (
     <div data-lid={it.id} className="pac-tile" style={{ ...style, animation: `pac-scale-in 420ms cubic-bezier(.22,.61,.36,1) ${delay}ms backwards` }}>
-      <div ref={ref} onPointerMove={onPointerMove} onPointerLeave={onPointerLeave} className="pac-tile-card" style={{ position: 'relative', background: '#ececef', overflow: 'hidden', width: '100%', height: '100%', borderRadius: 2, outline: isSel ? '2px solid #000' : '1px solid rgba(0,0,0,0.12)', outlineOffset: isSel ? 2 : 0, transition: 'outline-color 150ms ease, transform 260ms cubic-bezier(.22,.61,.36,1)' }}>
+      <div ref={ref} onPointerMove={onPointerMove} onPointerLeave={onPointerLeave} className="pac-tile-card" style={{ position: 'relative', background: '#ececef', overflow: 'hidden', width: '100%', height: '100%', boxShadow: isSel ? '0 0 0 2px #000' : 'none', transition: 'box-shadow 150ms ease, transform 260ms cubic-bezier(.22,.61,.36,1)' }}>
         {it.img && <img src={cdnResize(it.img, 460)} alt={it.n} width={230} height={305} loading="lazy" decoding="async" draggable={false} onError={(e) => { e.currentTarget.style.display = 'none' }} className="pac-tile-img" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 320ms cubic-bezier(.22,.61,.36,1)' }} />}
         <div data-heart={it.id} role="button" aria-pressed={liked} aria-label={liked ? 'Quitar de wishlist' : 'Agregar a wishlist'} style={{ position: 'absolute', top: 8, right: 8, zIndex: 2, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, background: liked ? '#0a0a0a' : 'rgba(255,255,255,0.88)', color: liked ? '#fff' : '#0a0a0a', cursor: 'pointer' }}>
           {liked ? '♥' : '♡'}
@@ -382,6 +379,15 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
   const [product, setProduct] = useState(null)
   const [productClosing, setProductClosing] = useState(false)
   const { liked, toggle } = useWishlist()
+  const { user, signInWithGoogle } = useAuth()
+  const [loginHint, setLoginHint] = useState(false)
+  const loginHintTimer = useRef(null)
+  const requireAuth = (fn) => {
+    if (user) { fn(); return }
+    setLoginHint(true)
+    clearTimeout(loginHintTimer.current)
+    loginHintTimer.current = setTimeout(() => setLoginHint(false), 3500)
+  }
   const closeProduct = useCallback(() => {
     setProductClosing(true)
     setTimeout(() => { setProduct(null); setProductClosing(false) }, PRODUCT_EXIT_MS)
@@ -392,8 +398,8 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
     return i < 0 ? list : [...list.slice(i), ...list.slice(0, i)]
   }, [list, selId])
 
-  const HEAD = mobile ? 54 : 74, FOOT = mobile ? 124 : 132
-  const tileW = mobile ? 138 : 230, tileH = mobile ? 184 : 305, gap = mobile ? 10 : 26
+  const HEAD = mobile ? 54 : 74, FOOT = mobile ? 0 : 132
+  const tileW = mobile ? 185 : 230, tileH = mobile ? 248 : 305, gap = mobile ? 8 : 26
   const vw = window.innerWidth, vh = window.innerHeight - HEAD - FOOT
   const colStep = tileW + gap, rowStep = tileH + gap
   const n = ordered.length
@@ -441,7 +447,7 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
         const hit = document.elementFromPoint(e.clientX, e.clientY)
         const heart = hit?.closest('[data-heart]')
         if (heart) {
-          toggle(+heart.dataset.heart)
+          requireAuth(() => toggle(+heart.dataset.heart))
         } else {
           const tile = hit?.closest('[data-lid]')
           if (tile) {
@@ -473,7 +479,7 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
   if (list.length === 0) {
     return (
       <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#fff', color: '#0a0a0a', fontFamily: FONT, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 32px', animation: closing ? 'pac-scale-out 240ms ease-in forwards' : 'pac-scale-in 280ms cubic-bezier(.22,.61,.36,1)' }}>
-        <button onClick={onClose} aria-label="Cerrar lookbook" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 60, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>✕</button>
+        <button onClick={onClose} aria-label="Cerrar lookbook" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 60, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, fontFamily: FONT }}>✕</button>
         <div style={{ fontSize: 56, marginBottom: 8 }}>♡</div>
         <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5, textTransform: 'uppercase' }}>Tu wishlist está vacía</div>
         <div style={{ fontSize: 13, fontWeight: 500, letterSpacing: 1, color: '#0a0a0a', textTransform: 'uppercase', marginTop: 14, maxWidth: 420, lineHeight: 1.6 }}>
@@ -485,77 +491,40 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
 
   const selIdx = list.findIndex(i => i.id === sel?.id)
   const blockProps = { blockW, blockH, cells, ordered, n, cols, colStep, rowStep, tileW, tileH, selId: sel?.id, liked }
-  const goAdjacent = (dir) => {
-    if (!sel) return
-    const i = list.findIndex(x => x.id === sel.id)
-    const ni = (i + dir + list.length) % list.length
-    setSelId(list[ni].id)
-  }
 
   return (
     <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#fff', color: '#0a0a0a', fontFamily: FONT, display: 'flex', flexDirection: 'column', animation: closing ? 'pac-scale-out 240ms ease-in forwards' : 'pac-scale-in 280ms cubic-bezier(.22,.61,.36,1)' }}>
-      {mobile && (
-        <div style={{ height: HEAD, flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid rgba(0,0,0,0.14)' }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 10, letterSpacing: 2, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600 }}>LOOKBOOK</div>
-            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {cats.map(c => CAT_META[c].label).join(' + ')}
-            </div>
-          </div>
-          <button onClick={onClose} aria-label="Cerrar lookbook" style={{ all: 'unset', cursor: 'pointer', width: 32, height: 32, flexShrink: 0, border: '1px solid #0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>✕</button>
-        </div>
-      )}
-
       <div ref={vpRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', cursor: 'grab', touchAction: 'none', userSelect: 'none', background: '#f4f4f2' }}>
         <div ref={wrapRef} style={{ position: 'absolute', top: 0, left: 0, display: 'grid', gridTemplateColumns: 'max-content max-content', willChange: 'transform' }}>
           <CatBlock {...blockProps} /><CatBlock {...blockProps} aria />
           <CatBlock {...blockProps} aria /><CatBlock {...blockProps} aria />
         </div>
-        {mobile && (
-          <div aria-hidden="true" style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', opacity: 0.55, textTransform: 'uppercase', pointerEvents: 'none' }}>
-            Arrastra · toca una prenda pa centrar
-          </div>
-        )}
+        {mobile && [
+          { left: 0, top: 0, bottom: 0, width: 56, mask: 'linear-gradient(90deg, black, transparent)' },
+          { right: 0, top: 0, bottom: 0, width: 56, mask: 'linear-gradient(270deg, black, transparent)' },
+          { left: 0, right: 0, top: 0, height: 56, mask: 'linear-gradient(180deg, black, transparent)' },
+          { left: 0, right: 0, bottom: 0, height: 56, mask: 'linear-gradient(0deg, black, transparent)' },
+        ].map((s, i) => (
+          <div key={i} aria-hidden="true" style={{
+            position: 'absolute', pointerEvents: 'none',
+            left: s.left, right: s.right, top: s.top, bottom: s.bottom,
+            width: s.width, height: s.height,
+            backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+            background: 'rgba(255,255,255,0.05)',
+            maskImage: s.mask, WebkitMaskImage: s.mask,
+          }} />
+        ))}
       </div>
 
-      {!mobile && (
-        <>
-          {/* Brand mark — floats over gallery, no background, matches the general lookbook. Kept outside
-              the draggable viewport so its pointer capture doesn't swallow clicks meant for it / the close button. */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '22px 0', pointerEvents: 'none', zIndex: 55 }}>
-            <div style={{ fontSize: 22, letterSpacing: 1, fontWeight: 700, color: '#fff', mixBlendMode: 'difference', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
-              PRET-A-CL
-            </div>
-          </div>
-          <button onClick={onClose} aria-label="Cerrar lookbook" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 60, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>✕</button>
-        </>
-      )}
-
-      {sel && mobile && (
-        <div className="pac-lb-foot" style={{ height: FOOT, flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.14)', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 10, background: '#fff' }}>
-          <div key={sel.id} style={{ display: 'flex', gap: 12, alignItems: 'center', animation: 'pac-fade-up 220ms cubic-bezier(.22,.61,.36,1)' }}>
-            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>Nº {String(selIdx + 1).padStart(2, '0')}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', opacity: 0.6, textTransform: 'uppercase', fontWeight: 600 }}>{sel.t} · {CAT_META[sel.c].label}</div>
-              <div style={{ fontSize: 17, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.3, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sel.n}</div>
-            </div>
-            <span style={{ fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{sel.p || '—'}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => goAdjacent(-1)} aria-label="Anterior" style={{ all: 'unset', cursor: 'pointer', width: 44, flexShrink: 0, border: '1px solid #0a0a0a', background: '#fff', color: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>←</button>
-            {sel.url && (
-              <a href={sel.url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', flex: 1 }}>
-                <div style={{ padding: '14px', background: '#0a0a0a', color: '#fff', textAlign: 'center', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase' }}>{sel.p ? 'COMPRAR ↗' : 'VER ↗'}</div>
-              </a>
-            )}
-            <button onClick={() => goAdjacent(1)} aria-label="Siguiente" style={{ all: 'unset', cursor: 'pointer', width: 44, flexShrink: 0, border: '1px solid #0a0a0a', background: '#fff', color: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 700 }}>→</button>
-            <button onClick={() => toggle(sel.id)} aria-pressed={liked.has(sel.id)} aria-label={liked.has(sel.id) ? 'Quitar de wishlist' : 'Agregar a wishlist'}
-              style={{ all: 'unset', cursor: 'pointer', width: 44, flexShrink: 0, border: `1px solid ${liked.has(sel.id) ? '#0a0a0a' : 'rgba(0,0,0,0.3)'}`, background: liked.has(sel.id) ? '#0a0a0a' : 'transparent', color: liked.has(sel.id) ? '#fff' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-              {liked.has(sel.id) ? '♥' : '♡'}
-            </button>
-          </div>
+      {/* Brand mark — floats over gallery, no background. Same on mobile and desktop so the
+          lookbook reads as one consistent surface, not two different UIs. Kept outside the
+          draggable viewport so its pointer capture doesn't swallow clicks meant for it / the close button. */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '22px 0', pointerEvents: 'none', zIndex: 55 }}>
+        <div style={{ fontSize: mobile ? 16 : 22, letterSpacing: 1, fontWeight: 700, color: '#fff', mixBlendMode: 'difference', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
+          PRET-A-CL
         </div>
-      )}
+      </div>
+      <button onClick={onClose} aria-label="Cerrar lookbook" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 60, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, fontFamily: FONT }}>✕</button>
 
       {sel && !mobile && (
         <div className="pac-lb-foot" style={{ height: 132, flexShrink: 0, borderTop: '1px solid rgba(0,0,0,0.14)', display: 'flex', alignItems: 'center', gap: S.md, padding: '0 24px', background: '#fff', overflow: 'hidden' }}>
@@ -576,9 +545,9 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
                   {sel.p ? 'COMPRAR' : 'VER'} ↗ <span style={{ color: 'rgba(255,255,255,0.65)', marginLeft: 8 }}>{sel.t}</span>
                 </a>
               )}
-              <button onClick={() => toggle(sel.id)} aria-pressed={liked.has(sel.id)} aria-label={liked.has(sel.id) ? 'Quitar de wishlist' : 'Agregar a wishlist'}
+              <button onClick={() => requireAuth(() => toggle(sel.id))} aria-pressed={liked.has(sel.id)} aria-label={liked.has(sel.id) ? 'Quitar de wishlist' : 'Agregar a wishlist'}
                 className="pac-lb-foot-heart"
-                style={{ all: 'unset', cursor: 'pointer', width: 50, height: 50, flexShrink: 0, border: `1px solid ${liked.has(sel.id) ? '#0a0a0a' : 'rgba(0,0,0,0.3)'}`, background: liked.has(sel.id) ? '#0a0a0a' : 'transparent', color: liked.has(sel.id) ? '#fff' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                style={{ all: 'unset', cursor: 'pointer', width: 50, height: 50, flexShrink: 0, border: `1px solid ${liked.has(sel.id) ? '#0a0a0a' : 'rgba(0,0,0,0.3)'}`, background: liked.has(sel.id) ? '#0a0a0a' : 'transparent', color: liked.has(sel.id) ? '#fff' : '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontFamily: FONT }}>
                 {liked.has(sel.id) ? '♥' : '♡'}
               </button>
             </div>
@@ -596,10 +565,18 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
             ? `pac-fade-down ${PRODUCT_EXIT_MS}ms cubic-bezier(.22,.61,.36,1) forwards`
             : 'pac-fade-up 320ms cubic-bezier(.22,.61,.36,1)',
         }}>
-          <button onClick={closeProduct} aria-label="Cerrar producto" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 80, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}>✕</button>
+          <button onClick={closeProduct} aria-label="Cerrar producto" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 80, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, fontFamily: FONT }}>✕</button>
           <Suspense fallback={null}>
             <Product product={product} />
           </Suspense>
+        </div>
+      )}
+
+      {/* Login hint toast */}
+      {loginHint && (
+        <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#0a0a0a', color: '#fff', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: FONT, animation: 'pac-fade-up 200ms ease-out' }}>
+          <span style={{ fontSize: 12, letterSpacing: 0.5 }}>Inicia sesión para guardar prendas</span>
+          <button onClick={signInWithGoogle} style={{ all: 'unset', cursor: 'pointer', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', textDecoration: 'underline', textUnderlineOffset: 3 }}>INGRESAR →</button>
         </div>
       )}
     </div>
@@ -634,7 +611,11 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
     setOpenClosing(true)
     setTimeout(() => { setOpen(null); setOpenClosing(false) }, 240)
   }, [])
-  const canvasPaused = paused || !!open
+  // Mobile: tapping a spike just rotates past it otherwise — show a quick liquid-glass
+  // card with what it is instead of committing straight into the full category lookbook.
+  const [spikePreview, setSpikePreview] = useState(null)
+  const [spikeProduct, setSpikeProduct] = useState(null)
+  const canvasPaused = paused || !!open || !!spikePreview || !!spikeProduct
 
   const active = cats.length > 0
   const counts = useMemo(() => {
@@ -647,13 +628,19 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
   const gHoverItem = gHover ? ITEMS.find(i => i.id === gHover.id) : null
 
   const onGlobeHover = useCallback(h => {
-    if (!h || !activeRef.current) { setGHover(null); setHoverId(null); return }
-    setGHover({ id: h.id }); setHoverId(h.id)
+    if (!h) { setGHover(null); setHoverId(null); return }
+    setHoverId(h.id)
+    if (activeRef.current) setGHover({ id: h.id })
+    else setGHover(null)
   }, [])
   const onGlobePick = useCallback((id, cat) => {
     setGHover(null); setHoverId(null)
-    setOpen({ cats: [cat], startId: id })
-  }, [])
+    if (mobile) {
+      setSpikePreview(ITEMS.find(i => i.id === id))
+    } else {
+      setOpen({ cats: [cat], startId: id })
+    }
+  }, [mobile])
   const toggleCat = useCallback(k => setCats(cur => cur.includes(k) ? cur.filter(x => x !== k) : [...cur, k]), [])
 
   const [hintVisible, setHintVisible] = useState(() => {
@@ -696,7 +683,7 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
           {/* Floating top chrome — brand + counts (left), account/wishlist (right) */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, pointerEvents: 'none', padding: '14px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 18, letterSpacing: 0.5, fontFamily: FONT }}>PRET-A-CL<sup style={{ fontSize: 9 }}>©</sup></div>
+              <div style={{ fontWeight: 700, fontSize: 26, letterSpacing: -0.5, lineHeight: 1, fontFamily: FONT }}>PRET-A-CL<sup style={{ fontSize: 12 }}>©</sup></div>
               <div style={{ fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600, marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>
                 {String(ITEMS.length).padStart(2, '0')} PIEZAS · {String(brandCount).padStart(2, '0')} SELLOS
               </div>
@@ -740,8 +727,15 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
                   style={{ all: 'unset', cursor: 'pointer', padding: '15px 16px', border: '1px solid #0a0a0a', background: '#fff', color: '#0a0a0a', fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', fontFamily: FONT }}>✕</button>
               </div>
             ) : (
-              <div style={{ textAlign: 'center', fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase', marginBottom: 10 }}>
-                Arrastra para rotar · elige una región
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 10 }}>
+                <div style={{ textAlign: 'center', fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase' }}>
+                  Arrastra para rotar · elige una región
+                </div>
+                <button
+                  onClick={onOpenLookbook}
+                  style={{ all: 'unset', cursor: 'pointer', textAlign: 'center', padding: '13px', border: '1px solid #0a0a0a', background: '#fff', color: '#0a0a0a', fontWeight: 700, fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', fontFamily: FONT }}>
+                  VER TODO EL LOOKBOOK · {String(ITEMS.length).padStart(2, '0')} →
+                </button>
               </div>
             )}
             <div className="pac-chiprow" style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
@@ -779,25 +773,19 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
           )}
 
           {/* Header band — brand mark + tagline (left), coordinates + globe index + date (right) */}
-          <div className="pac-headerband" style={{ position: 'absolute', top: 56, left: 56, right: 56, height: 64, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'none', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
-            <span className="pac-headerband-brand" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 32, lineHeight: 0.9, letterSpacing: 0.5 }}>
-              PRET-A-CL<sup style={{ fontSize: 14 }}>©</sup>
+          <div className="pac-headerband" style={{ position: 'absolute', top: 32, left: 0, right: 0, height: 64, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
+            <span className="pac-headerband-brand" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 44, lineHeight: 0.9, letterSpacing: 0.5, transform: 'translateX(50px)' }}>
+              PRET-A-CL<sup style={{ fontSize: 18 }}>©</sup>
             </span>
-            <div className="pac-headerband-meta" style={{ display: 'flex', alignItems: 'baseline', gap: 26, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', fontVariantNumeric: 'tabular-nums' }}>
-              <span className="pac-headerband-coords" style={{ color: '#0a0a0a' }}>SANTIAGO · 33°27′S 70°39′O</span>
-              <button onClick={handleAccountClick} className="pac-cta"
-                style={{ all: 'unset', pointerEvents: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 13px', fontWeight: 700, fontFamily: FONT, color: '#fff', background: '#0a0a0a' }}>
-                CUENTA
-              </button>
-            </div>
+            <button onClick={handleAccountClick} className="pac-cta"
+              style={{ all: 'unset', position: 'absolute', right: 56, pointerEvents: 'auto', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '7px 13px', fontWeight: 700, fontFamily: FONT, fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: '#fff', background: '#0a0a0a' }}>
+              CUENTA
+            </button>
           </div>
 
           {/* Left editorial column: masthead + headline + intro (top) / numbered region index (bottom) */}
           <div className="pac-editorial">
             <div style={{ animation: 'pac-fade-up 600ms cubic-bezier(.22,.61,.36,1)' }}>
-              <div style={{ fontSize: 10, letterSpacing: 2.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600 }}>
-                ÍNDICE ORBITAL · {ITEMS.length} PIEZAS
-              </div>
               <div className="pac-hero-display" style={{ textTransform: 'uppercase', marginTop: 16, fontWeight: 700 }}>
                 NO ES<br />RETAIL.<br />ES CULTO.
               </div>
@@ -816,7 +804,7 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
             </div>
 
             <div>
-              <div style={{ fontSize: 10, letterSpacing: 2, color: '#0a0a0a', textTransform: 'uppercase', marginBottom: 4, fontWeight: 600, animation: 'pac-fade-in 500ms ease-out' }}>
+              <div style={{ fontSize: 10, letterSpacing: 2, color: '#0a0a0a', textTransform: 'uppercase', marginBottom: 8, fontWeight: 600, animation: 'pac-fade-in 500ms ease-out' }}>
                 REGIONES / CATEGORÍAS
               </div>
               {CAT_ORDER.map((k, i) => {
@@ -825,17 +813,17 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
                 return (
                   <button key={k} onClick={() => toggleCat(k)}
                     className="pac-catbtn pac-catbtn-row"
-                    style={{ all: 'unset', cursor: 'pointer', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 16, padding: '9px 4px', borderTop: '1px solid rgba(0,0,0,0.14)', color: '#0a0a0a', fontFamily: FONT, animation: `pac-fade-up 450ms cubic-bezier(.22,.61,.36,1) ${i * 60}ms backwards` }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, width: 22, color: on ? '#0a0a0a' : '#0a0a0a', fontVariantNumeric: 'tabular-nums' }}>{String(i + 1).padStart(2, '0')}</span>
-                    <span style={{ width: 15, height: 15, flexShrink: 0, border: `1.5px solid ${on ? '#000' : 'rgba(0,0,0,0.4)'}`, background: on ? '#000' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 10, fontWeight: 700, transition: 'background-color 150ms ease' }}>{on ? '✓' : ''}</span>
-                    <span className="pac-catbtn-label" style={{ fontWeight: 700, fontSize: 20, letterSpacing: -0.4, textTransform: 'uppercase', flex: 1 }}>{m.label}</span>
-                    <span style={{ fontSize: 11, fontWeight: 500, color: '#0a0a0a', fontVariantNumeric: 'tabular-nums' }}>{String(counts[k] || 0).padStart(2, '0')}</span>
+                    style={{ all: 'unset', cursor: 'pointer', width: '100%', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 12, padding: '9px 0', borderTop: '1px solid rgba(0,0,0,0.14)', color: '#0a0a0a', fontFamily: FONT, animation: `pac-fade-up 450ms cubic-bezier(.22,.61,.36,1) ${i * 60}ms backwards` }}>
+                    <span style={{ fontSize: 11, fontWeight: on ? 700 : 500, letterSpacing: 1, width: 20, flexShrink: 0, fontVariantNumeric: 'tabular-nums', color: on ? '#0a0a0a' : 'rgba(0,0,0,0.5)' }}>{String(i + 1).padStart(2, '0')}</span>
+                    <span style={{ width: 14, height: 14, flexShrink: 0, border: `1.5px solid ${on ? '#000' : 'rgba(0,0,0,0.4)'}`, background: on ? '#000' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, fontWeight: 700, transition: 'background-color 150ms ease' }}>{on ? '✓' : ''}</span>
+                    <span className="pac-catbtn-label" style={{ letterSpacing: 0.3, textTransform: 'uppercase', flex: 1, fontWeight: on ? 700 : 500, color: on ? '#0a0a0a' : 'rgba(0,0,0,0.5)', transition: 'font-weight 0ms, color 150ms ease' }}>{m.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: on ? 700 : 500, color: on ? '#0a0a0a' : 'rgba(0,0,0,0.5)', fontVariantNumeric: 'tabular-nums' }}>{String(counts[k] || 0).padStart(2, '0')}</span>
                   </button>
                 )
               })}
               <div style={{ borderTop: '1px solid rgba(0,0,0,0.14)' }} />
               {active ? (
-                <div style={{ display: 'flex', gap: S.xs, marginTop: 10, animation: 'pac-fade-up 280ms cubic-bezier(.22,.61,.36,1)' }}>
+                <div style={{ display: 'flex', gap: S.xs, marginTop: S.xs, animation: 'pac-fade-in 200ms ease-out' }}>
                   <button
                     onClick={() => listItems.length > 0 && setOpen({ cats: [...cats], startId: listItems[0].id })}
                     className="pac-cta"
@@ -850,7 +838,7 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
                   </button>
                 </div>
               ) : (
-                <div style={{ marginTop: 10, fontSize: 11, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase' }}>
+                <div style={{ marginTop: S.xs, fontSize: 11, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase' }}>
                   ↑ Selecciona una o más regiones para activar
                 </div>
               )}
@@ -886,6 +874,55 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
       {/* Category lookbook overlay */}
       {open && (
         <CatLookbook cats={open.cats} startId={open.startId} items={ITEMS} onClose={closeOpen} closing={openClosing} />
+      )}
+
+      {/* Mobile spike tap — liquid-glass card centered over a blurred globe, telling you
+          what that spike was and offering a straight line to the product. X (or tapping
+          the backdrop) dismisses it and you keep spinning the globe. */}
+      {spikePreview && (
+        <div
+          onClick={() => setSpikePreview(null)}
+          style={{
+            position: 'absolute', inset: 0, zIndex: 60,
+            background: 'rgba(20,20,18,0.32)',
+            backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            animation: 'pac-fade-in 180ms ease-out',
+          }}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: 'relative', width: 250, background: '#fff',
+              border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 24px 56px rgba(0,0,0,0.32)',
+              animation: 'pac-scale-in 220ms cubic-bezier(.22,.61,.36,1)',
+            }}>
+            <button onClick={() => setSpikePreview(null)} aria-label="Cerrar"
+              style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: -14, right: -14, zIndex: 1, width: 32, height: 32, borderRadius: '50%', border: '1px solid rgba(0,0,0,0.2)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontFamily: FONT }}>✕</button>
+            <div style={{ width: '100%', height: 320, background: '#ececef', overflow: 'hidden' }}>
+              {spikePreview.img && <img src={cdnResize(spikePreview.img, 460)} alt={spikePreview.n} draggable="false" onError={(e) => { e.currentTarget.style.display = 'none' }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+            </div>
+            <div style={{ padding: '12px 14px 14px', borderTop: '1px solid rgba(0,0,0,0.12)' }}>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: 'rgba(0,0,0,0.55)', textTransform: 'uppercase', fontWeight: 600 }}>{spikePreview.t} · {CAT_META[spikePreview.c].label}</div>
+              <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 0.3, textTransform: 'uppercase', lineHeight: 1.25, marginTop: 4 }}>{spikePreview.n}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, marginTop: 4 }}>{spikePreview.p || '—'}</div>
+              <div
+                onClick={() => { setSpikeProduct(PRODUCTS[spikePreview.id]); setSpikePreview(null) }}
+                role="button" aria-label={`Ir al producto: ${spikePreview.n}`}
+                style={{ marginTop: 10, padding: '12px', background: '#0a0a0a', color: '#fff', textAlign: 'center', fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', cursor: 'pointer' }}>
+                IR AL PRODUCTO →
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {spikeProduct && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 70, background: '#fff', animation: 'pac-fade-up 320ms cubic-bezier(.22,.61,.36,1)' }}>
+          <button onClick={() => setSpikeProduct(null)} aria-label="Cerrar producto" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 80, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, fontFamily: FONT }}>✕</button>
+          <Suspense fallback={null}>
+            <Product product={spikeProduct} />
+          </Suspense>
+        </div>
       )}
 
     </div>
