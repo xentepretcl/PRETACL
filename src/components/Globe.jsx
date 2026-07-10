@@ -1048,11 +1048,15 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
             }}>
             <button onClick={() => setSpikePreview(null)} aria-label="Cerrar"
               style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: -14, right: -14, zIndex: 1, width: 32, height: 32, borderRadius: '50%', border: '1px solid rgba(0,0,0,0.2)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontFamily: FONT }}>✕</button>
-            <div style={{ width: '100%', height: 320, background: '#ececef', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 10, letterSpacing: 2, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600, padding: '10px 14px 0' }}>
+              <span style={{ fontWeight: 700, color: '#0a0a0a' }}>● EN ÓRBITA</span>
+              <span>{CAT_META[spikePreview.c].label}</span>
+            </div>
+            <div style={{ width: '100%', height: 280, marginTop: 8, background: '#ececef', overflow: 'hidden' }}>
               {spikePreview.img && <img src={cdnResize(spikePreview.img, 460)} alt={spikePreview.n} draggable="false" onError={(e) => { e.currentTarget.style.display = 'none' }} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
             </div>
             <div style={{ padding: '12px 14px 14px', borderTop: '1px solid rgba(0,0,0,0.12)' }}>
-              <div style={{ fontSize: 9, letterSpacing: 1.5, color: 'rgba(0,0,0,0.55)', textTransform: 'uppercase', fontWeight: 600 }}>{spikePreview.t} · {CAT_META[spikePreview.c].label}</div>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: 'rgba(0,0,0,0.55)', textTransform: 'uppercase', fontWeight: 600 }}>{spikePreview.t}</div>
               <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: 0.3, textTransform: 'uppercase', lineHeight: 1.25, marginTop: 4 }}>{spikePreview.n}</div>
               <div style={{ fontSize: 13, fontWeight: 500, marginTop: 4 }}>{spikePreview.p || '—'}</div>
               <div
