@@ -454,7 +454,7 @@ function CatTile({ it, isSel, delay, liked, style }) {
         <div data-heart={it.id} role="button" aria-pressed={liked} aria-label={liked ? 'Quitar de wishlist' : 'Agregar a wishlist'} style={{ position: 'absolute', top: 8, right: 8, zIndex: 2, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, background: liked ? '#0a0a0a' : 'rgba(255,255,255,0.88)', color: liked ? '#fff' : '#0a0a0a', cursor: 'pointer' }}>
           {liked ? '♥' : '♡'}
         </div>
-        <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '10px 13px', background: 'rgba(255,255,255,0.92)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div style={{ position: 'absolute', left: -1, right: -1, bottom: -1, padding: '10px 13px', background: 'rgba(255,255,255,0.92)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <span style={{ color: '#0a0a0a', fontWeight: 700, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.n}</span>
           <span style={{ color: '#0a0a0a', fontWeight: 500, fontSize: 10, whiteSpace: 'nowrap', marginLeft: 6 }}>{it.p}</span>
         </div>
@@ -629,8 +629,8 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
       {/* Brand mark — floats over gallery, no background. Same on mobile and desktop so the
           lookbook reads as one consistent surface, not two different UIs. Kept outside the
           draggable viewport so its pointer capture doesn't swallow clicks meant for it / the close button. */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '22px 0', pointerEvents: 'none', zIndex: 55 }}>
-        <div style={{ fontSize: mobile ? 16 : 22, letterSpacing: 1, fontWeight: 700, color: '#fff', mixBlendMode: 'difference', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', justifyContent: 'center', padding: '22px 0', pointerEvents: 'none' }}>
+        <div style={{ fontFamily: BRAND_FONT, fontSize: 28, letterSpacing: 1, fontWeight: 700, color: '#fff', mixBlendMode: 'difference', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
           PRET-A-CL
         </div>
       </div>

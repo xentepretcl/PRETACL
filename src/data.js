@@ -38,7 +38,7 @@ export const BRANDS = {
     meta: 'SANTIAGO, CHILE, PROVIDENCIA',
     vision: '"FEMENINO SIN GÉNERO, ATEMPORAL SIN ABURRIMIENTO."',
     history:
-      'Marca de diseño independiente santiaguina con local en Galería Drugstore. Prendas con carácter gráfico e identidad propia: tartanes, brocatos, líneas metálicas y siluetas estructuradas que mezclan lo clásico con lo irreverente.',
+      'Fundada en 2014 por la diseñadora Tatiana Campos, Palosanto nace cuestionando el fast fashion en Chile. Colecciones en formato cápsula con telas nacionales rescatadas de hasta 50 años, moda ética y sostenible, mostrada en showrooms de París, Barcelona y Milán.',
     store: 'SHOP-PALOSANTO.COM',
     url: 'https://www.shop-palosanto.com/',
     logo: 'https://cdn.shopify.com/s/files/1/0408/9626/6404/files/palosantowhite.png?v=1701452532',
@@ -50,7 +50,7 @@ export const BRANDS = {
     meta: 'SANTIAGO, CHILE, DISEÑO CONTEMPORÁNEO',
     vision: '"FEMINIDAD ESTRUCTURADA, TEJIDO CON INTENCIÓN."',
     history:
-      'Trinidad Studio es una marca chilena de diseño contemporáneo que trabaja con siluetas pensadas para el cuerpo femenino. Colecciones drop por drop, con énfasis en básicos elevados, vestidos de fiesta y chaquetas con carácter.',
+      'Trinidad Studio nace el 2019 para reivindicar el diseño y la confección local. Trabaja con telas vintage rescatadas de la industria textil chilena y defiende lo hecho a mano, a baja escala: básicos elevados, vestidos de fiesta y chaquetas con carácter.',
     store: 'TRINIDAD-STUDIO.COM',
     url: 'https://trinidad-studio.com/',
     logo: 'https://trinidad-studio.com/wp-content/uploads/2020/09/LOGO-TRINIDAD-STUDIO.png',
@@ -83,7 +83,7 @@ export const BRANDS = {
     meta: 'SANTIAGO, CHILE, DISEÑO FEMENINO',
     vision: '"PRENDAS CON PERSONALIDAD, HECHAS PARA BRILLAR."',
     history:
-      'C. Miller es una marca de diseño femenino santiaguina que mezcla ropa y accesorios con carácter propio. Strapless, baby tees, faldas y zapatos con estética vintage-contemporánea, en ediciones pequeñas y drops sorpresa.',
+      'C. Miller nace el 2017 de la mano de la diseñadora Catherine Miller. Su trabajo cruza desarrollo textil, propuesta artística-visual y confección ética en Sudamérica, con telas de saldo nacional y estampados propios: strapless, baby tees y faldas con personalidad.',
     store: 'CMILLERSHOP.COM',
     url: 'https://www.cmillershop.com/collections/c-miller',
     logo: 'https://www.cmillershop.com/cdn/shop/files/CMILLER_LOGO_1-01_1200x1200.png?v=1771890798',
@@ -94,7 +94,7 @@ export const BRANDS = {
     meta: 'CHILE, METAL & DARK AESTHETIC',
     vision: '"IDENTIDAD OSCURA, DISEÑO SIN CONCESIONES."',
     history:
-      'Dos Lobos Chile es una marca de accesorios y ropa con estética metal y dark. Bags, bufandas, hoodies y tees con gráficas propias y materiales de carácter (reptil, chrome, suede) producidos en tirajes limitados con identidad de lobo.',
+      'Dos Lobos nace el 2015, creada por una pareja joven apasionada por la moda, la música y el arte, con manufactura 100% nacional. Fusiona romanticismo oscuro, música electrónica y fotografía en bags, bufandas y hoodies con materiales de carácter: reptil, chrome, suede.',
     store: 'DOSLOBOSCHILE.CL',
     url: 'https://dosloboschile.cl/',
     logo: 'https://dosloboschile.cl/cdn/shop/files/doslobos-logo-peq.png?v=1688082319',
@@ -106,7 +106,7 @@ export const BRANDS = {
     meta: 'CHILE, STREETWEAR GRÁFICO',
     vision: '"RETORNO CONTINUO. LUCKY RABBIT."',
     history:
-      'Treino es una marca chilena de streetwear con identidad gráfica fuerte. Poleras boxy fit, buzos baggy, pantalones barrel y work jackets en colores contrastantes: cada colección gira alrededor de un símbolo o mantra que se repite como ritual.',
+      'Treino nace en Chile inspirada en la cultura urbana, la disciplina y la fortuna: "no seguimos tendencias, las anticipamos." Poleras boxy fit, buzos baggy y work jackets en colores contrastantes, cada colección gira en torno a un símbolo o mantra.',
     store: 'TREINO.CL',
     url: 'https://treino.cl/',
     logo: 'https://treino.cl/cdn/shop/files/ISOTIPO-TREBOL-OG-NEGRO.png?v=1777314520',
@@ -120,6 +120,7 @@ export const BRANDS = {
       'Guaico Estudio es un estudio de diseño independiente santiaguino que produce prendas en tirajes pequeños con atención al detalle y al proceso. Prendas atemporales con materialidades cuidadas (lino, tejido, punto) para quien busca ropa que dure.',
     store: 'GUAICOESTUDIO.COM',
     url: 'https://www.guaicoestudio.com/',
+    logo: '/brands/guaico-logo.jpg',
   },
   lalalou: {
     id: 'lalalou',
@@ -127,7 +128,7 @@ export const BRANDS = {
     meta: 'CHILE, TEJIDOS PREMIUM',
     vision: '"ALPACA, CASHMERE Y TERCIOPELO."',
     history:
-      'Lalalou es una marca chilena de moda premium con foco en tejidos naturales de alta calidad: alpaca, cashmere, terciopelo y cotelé. Prendas de confección cuidada y siluetas sofisticadas que mezclan lo clásico con lo contemporáneo.',
+      'Lalalou nace de María de los Ángeles, artista, y Macarena, diseñadora, amigas desde los 90. Produce en pocas unidades con materiales nobles —lana, alpaca, lino, algodón— hechos a mano por artesanas locales, priorizando calidad y durabilidad sobre volumen.',
     store: 'LALALOU.CL',
     url: 'https://lalalou.cl/',
     logo: 'https://lalalou.cl/cdn/shop/files/logo_blanco_y_negro-03.png?v=1750709237',
@@ -138,7 +139,7 @@ export const BRANDS = {
     meta: 'CHILE, DISEÑO CONTEMPORÁNEO FEMENINO',
     vision: '"MOVIMIENTO, COLOR Y ESTRUCTURA."',
     history:
-      'Munay Sisters es una marca de diseño femenino chilena con identidad contemporánea y colorida. Tops wave, vestidos, faldas plisadas, jeans y blazers con carácter: prendas que se mueven y se sienten bien en el cuerpo.',
+      'Munay Sisters nace el 2016 en Nueva Zelanda de la mano de las gemelas Loreto y Pía, y llega a Chile el 2018 debutando en el Mercedes-Benz Fashion Week. Pionera en moda 100% orgánica certificada, produce en pequeñas líneas locales básicos modernos para el uso diario.',
     store: 'MUNAYSISTERS.COM',
     url: 'https://munaysisters.com/collections/ver-todo',
     logo: 'https://munaysisters.com/cdn/shop/files/MS07_2.png?v=1653674878',

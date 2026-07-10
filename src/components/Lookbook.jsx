@@ -91,9 +91,9 @@ function Tile({ p, pid, style, liked, onOpen, onToggleHeart }) {
         />
         <div style={{
           position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
+          left: -1,
+          right: -1,
+          bottom: -1,
           background: 'rgba(255,255,255,0.92)',
           padding: '10px 14px',
           display: 'flex',
@@ -431,7 +431,7 @@ export default function Lookbook({ onProduct, list, label, emptyTitle, emptySub 
       }}>
         <div style={{
           fontFamily: T.brandFont,
-          fontSize: 22,
+          fontSize: 28,
           letterSpacing: 1,
           fontWeight: 700,
           color: '#fff',
