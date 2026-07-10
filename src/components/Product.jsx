@@ -29,12 +29,13 @@ function LoginHint({ onLogin, font }) {
 // sections — that made buying/wishlist-ing on mobile require scrolling past
 // two full viewports first.
 function MobileProduct({ p, b, photos, soldOut, pid, isLiked, toggle, logoFailed, setLogoFailed }) {
+  const [fullPhoto, setFullPhoto] = useState(null)
   return (
     <div style={{ height: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: T.font, fontWeight: 700, color: T.ink, background: T.paper }}>
       <div style={{ position: 'relative', height: '44vh', minHeight: 300, flex: 'none', borderBottom: `1px solid ${T.hair}`, overflow: 'hidden' }}>
         <div style={{ display: 'flex', height: '100%', overflowX: 'auto', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}>
           {photos.map((src, i) => (
-            <div key={i} style={{ position: 'relative', width: '100%', height: '100%', flex: 'none', scrollSnapAlign: 'start', background: '#e8e8e6' }}>
+            <div key={i} onClick={() => setFullPhoto(i)} style={{ position: 'relative', width: '100%', height: '100%', flex: 'none', scrollSnapAlign: 'start', background: '#e8e8e6' }}>
               <img
                 src={cdnResize(src, 760)}
                 alt={`${p.name} ${i + 1}`}
@@ -54,6 +55,24 @@ function MobileProduct({ p, b, photos, soldOut, pid, isLiked, toggle, logoFailed
         )}
       </div>
 
+      {fullPhoto !== null && (
+        <div
+          onClick={() => setFullPhoto(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(10,10,10,0.96)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'pac-fade-in 150ms ease-out' }}
+        >
+          <img
+            src={cdnResize(photos[fullPhoto], 1400)}
+            alt={`${p.name} ${fullPhoto + 1}`}
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+          />
+          <button
+            onClick={() => setFullPhoto(null)}
+            aria-label="Cerrar"
+            style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 16, width: 40, height: 40, border: '1px solid rgba(255,255,255,0.4)', background: 'rgba(10,10,10,0.6)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700 }}
+          >✕</button>
+        </div>
+      )}
+
       <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 22px' }}>
         {b.logo && !logoFailed ? (
           <div style={{ display: 'flex', alignItems: 'center', height: 40, padding: b.logoDark ? '8px 14px' : 0, background: b.logoDark ? T.ink : 'transparent' }}>
@@ -68,8 +87,7 @@ function MobileProduct({ p, b, photos, soldOut, pid, isLiked, toggle, logoFailed
         </a>
 
         <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${T.hair}` }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, color: T.ink2, textTransform: 'uppercase' }}>{b.name}</div>
-          <div style={{ fontSize: 30, marginTop: 4, letterSpacing: -0.6, lineHeight: 1.05, textTransform: 'uppercase' }}>{p.name}</div>
+          <div style={{ fontSize: 30, letterSpacing: -0.6, lineHeight: 1.05, textTransform: 'uppercase' }}>{p.name}</div>
           <div style={{ fontSize: 24, fontWeight: 800, marginTop: 10, letterSpacing: 0.3, color: soldOut ? T.ink2 : T.ink }}>
             {soldOut ? 'AGOTADO' : `${p.price} CLP`}
           </div>
