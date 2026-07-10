@@ -195,6 +195,8 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
     }
 
     let drag = null
+    let pinch = null
+    const pointers = new Map()
     let pressTimer = null
     function hitTest(cx_, cy_) {
       const rect = canvas.getBoundingClientRect()
@@ -208,9 +210,23 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
     }
 
     const onDown = e => {
-      drag = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, longPress: false }
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      try { canvas.setPointerCapture(e.pointerId) } catch (_) {}
       lastInteract = performance.now()
       onFirstInteractRef.current?.()
+
+      // Second finger down — switch to pinch-to-zoom, cancel any single-finger drag/long-press.
+      if (pointers.size === 2) {
+        clearTimeout(pressTimer)
+        drag = null
+        onHoverRef.current(null)
+        const [a, b] = [...pointers.values()]
+        pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom: stRef.current.zoom }
+        return
+      }
+      if (pointers.size > 2) return
+
+      drag = { id: e.pointerId, x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, longPress: false }
       onHoverRef.current(null)
       // Touch has no hover-before-press, so a long-press without movement opens the same
       // preview card the mouse gets for free on hover — lets touch users peek before committing.
@@ -220,11 +236,20 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
         const hit = hitTest(drag.sx, drag.sy)
         if (hit) { drag.longPress = true; onHoverRef.current({ id: hit.id }) }
       }, 450)
-      try { canvas.setPointerCapture(e.pointerId) } catch (_) {}
     }
     const onMove = e => {
       const st = stRef.current
-      if (drag) {
+      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (pinch && pointers.size >= 2) {
+        const [a, b] = [...pointers.values()]
+        const dist = Math.hypot(a.x - b.x, a.y - b.y)
+        st.zoom = Math.max(0.85, Math.min(1.6, pinch.zoom * (dist / pinch.dist)))
+        lastInteract = performance.now()
+        return
+      }
+
+      if (drag && drag.id === e.pointerId) {
         const dx = e.clientX - drag.x, dy = e.clientY - drag.y
         if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 5) {
           drag.moved = true; canvas.style.cursor = 'grabbing'
@@ -237,18 +262,34 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
         lastInteract = performance.now()
         return
       }
+      if (drag || pinch) return
+      // Mouse-only: touch has no hover state, so a stray touchmove (e.g. from a
+      // gesture starting over another element) must never fake a hover preview.
+      if (e.pointerType === 'touch') return
+
       const hit = hitTest(e.clientX, e.clientY)
       canvas.style.cursor = hit ? 'pointer' : 'grab'
       onHoverRef.current(hit ? { id: hit.id } : null)
       if (hit) lastInteract = performance.now()
     }
     const onUp = e => {
-      clearTimeout(pressTimer)
-      if (drag && !drag.moved && !drag.longPress) {
-        const hit = hitTest(e.clientX, e.clientY)
-        if (hit) onPickRef.current(hit.id, hit.cat)
+      pointers.delete(e.pointerId)
+      if (pinch) {
+        if (pointers.size < 2) pinch = null
+        lastInteract = performance.now()
+        return
       }
-      drag = null; canvas.style.cursor = 'grab'
+      clearTimeout(pressTimer)
+      if (drag && drag.id === e.pointerId) {
+        if (!drag.moved && !drag.longPress) {
+          const hit = hitTest(e.clientX, e.clientY)
+          if (hit) onPickRef.current(hit.id, hit.cat)
+        } else if (drag.longPress) {
+          // Long-press just "peeks" — releasing dismisses the preview instead of leaving it stuck on screen.
+          onHoverRef.current(null)
+        }
+        drag = null; canvas.style.cursor = 'grab'
+      }
       lastInteract = performance.now()
     }
     const onWheel = e => {
