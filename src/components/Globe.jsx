@@ -1042,7 +1042,7 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              position: 'relative', width: 250, background: '#fff',
+              position: 'relative', width: 'min(340px, 86vw)', background: '#fff',
               border: '1px solid rgba(0,0,0,0.12)', boxShadow: '0 24px 56px rgba(0,0,0,0.32)',
               animation: 'pac-scale-in 220ms cubic-bezier(.22,.61,.36,1)',
             }}>
