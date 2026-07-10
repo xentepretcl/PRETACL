@@ -430,6 +430,7 @@ export default function Lookbook({ onProduct, list, label, emptyTitle, emptySub 
         pointerEvents: 'none',
       }}>
         <div style={{
+          fontFamily: T.brandFont,
           fontSize: 22,
           letterSpacing: 1,
           fontWeight: 700,

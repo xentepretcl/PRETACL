@@ -10,7 +10,8 @@ const Product = lazy(() => import('./Product'))
 
 const PRODUCT_EXIT_MS = 280
 
-const FONT = '"Alte Haas Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif'
+const FONT = '"Inter", "Helvetica Neue", Helvetica, Arial, sans-serif'
+const BRAND_FONT = '"Alte Haas Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif'
 
 const CAT_META = {
   SUPERIOR:   { label: 'SUPERIOR',   sub: 'TOPS · POLERAS · CAMISAS',     lngC: -135 },
@@ -75,13 +76,48 @@ function vecLL(lng, lat) {
   const a = lng * D2R, b = lat * D2R
   return [Math.cos(b) * Math.sin(a), Math.sin(b), Math.cos(b) * Math.cos(a)]
 }
-function fibonacci(n) {
-  const pts = [], gr = Math.PI * (3 - Math.sqrt(5))
-  for (let i = 0; i < n; i++) {
-    const y = 1 - (i / (n - 1)) * 2, r = Math.sqrt(Math.max(0, 1 - y * y)), th = gr * i
-    pts.push([Math.cos(th) * r, y, Math.sin(th) * r])
+// ASCII letter-field texture — the sphere is literally built from the brand name.
+// Every cell of a monospace grid samples the front of the sphere; the letter it shows is
+// fixed to that point on the globe (P-R-E-T---A---C-L wrapping around longitude), so as the
+// globe turns you read PRET-A-CL scrolling across its face. Same effect as the intro globe.
+const ASCII_SEQ = 'PRET-A-CL'
+function drawAsciiField(ctx, cx, cy, R, cosY, sinY, cosT, sinT, mix, dim = 0) {
+  const cell = Math.max(10, Math.min(16, R * 0.04))
+  const half = cell / 2
+  const NBANDS = 150
+  const COL = 360 / NBANDS
+  const LATOFF = 7
+  const Lx = -0.42, Ly = 0.52, Lz = 0.74
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = Math.round(cell * 0.95) + 'px "SFMono-Regular", ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace'
+  for (let py = cy - R + half; py <= cy + R; py += cell) {
+    for (let px = cx - R + half; px <= cx + R; px += cell) {
+      const X = (px - cx) / R, Y = -(py - cy) / R
+      const r2 = X * X + Y * Y
+      if (r2 > 1) continue
+      const Z = Math.sqrt(1 - r2)
+      const bright = Math.max(0, X * Lx + Y * Ly + Z * Lz)
+      const rimFade = r2 < 0.86 ? 1 : Math.max(0, (1 - r2) / 0.14)
+      const zPost = -Y * sinT + Z * cosT
+      const vx = X * cosY - zPost * sinY
+      const vy = Y * cosT + Z * sinT
+      const vz = X * sinY + zPost * cosY
+      const lon = Math.atan2(vx, vz) * 180 / Math.PI
+      const lat = Math.asin(Math.max(-1, Math.min(1, vy))) * 180 / Math.PI
+      const bandLon = Math.floor((lon + 180) / COL)
+      const bandLat = Math.floor((lat + 90) / LATOFF)
+      const ch = ASCII_SEQ[(((bandLon + bandLat) % ASCII_SEQ.length) + ASCII_SEQ.length) % ASCII_SEQ.length]
+      const discDark = mix * Math.min(1, Math.max(0, (Math.sqrt(r2) - 0.12) / 0.72))
+      let a, ink
+      if (discDark > 0.5) { ink = '255,255,255'; a = (0.32 + 0.56 * bright) * rimFade }
+      else { ink = '10,10,10'; a = (0.24 + 0.5 * (1 - bright)) * rimFade }
+      if (dim > 0) a *= (1 - dim * 0.75)
+      if (a < 0.04) continue
+      ctx.fillStyle = `rgba(${ink},${a.toFixed(3)})`
+      ctx.fillText(ch, px, py)
+    }
   }
-  return pts
 }
 
 // ---- Decorative instrument grid: column hairlines, frame, rule lines ----
@@ -90,6 +126,8 @@ function GridFrame() { return null }
 // ---- Globe canvas ----
 function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInteract, paused }) {
   const ref = useRef(null)
+  const hoverImgRef = useRef(null)
+  const lastHoverSrcRef = useRef(null)
   const stRef = useRef({ yaw: 0, pitch: -0.28, zoom: 1, anim: 0, activeCats: [], hoverId: null })
   stRef.current.hoverId = hoverId
   const onHoverRef = useRef(onHover); onHoverRef.current = onHover
@@ -101,11 +139,6 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
   const catsKey = (activeCats || []).join(',')
   useEffect(() => { stRef.current.anim = 0; stRef.current.activeCats = activeCats || [] }, [catsKey])
 
-  // Mobile's sphere renders at roughly half the diameter of desktop's — the same
-  // 900-dot field at that size reads as a muddy gray haze instead of a crisp
-  // instrument texture. Thin it out and shrink dots to match the smaller canvas.
-  const isMobileGlobe = typeof window !== 'undefined' && window.innerWidth < 768
-  const dots = useMemo(() => fibonacci(isMobileGlobe ? 480 : 900), [isMobileGlobe])
   const spikes = useMemo(() => items.map(it => ({ it, v: vecLL(it.lng, it.lat) })), [items])
 
   useEffect(() => {
@@ -139,6 +172,21 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
     let raf, cosT = 1, sinT = 0
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let lastInteract = performance.now() - 5000
+
+    // Same black-sphere reveal as the intro globe: starts fully dark (gradient + grain)
+    // and morphs to the plain disc the first time this canvas becomes visible/unpaused.
+    let discMix = 1
+    const grain = document.createElement('canvas')
+    grain.width = grain.height = 140
+    const gctx = grain.getContext('2d')
+    const gimg = gctx.createImageData(140, 140)
+    for (let i = 0; i < gimg.data.length; i += 4) {
+      const v = (Math.random() * 255) | 0
+      gimg.data[i] = gimg.data[i + 1] = gimg.data[i + 2] = v
+      gimg.data[i + 3] = 255
+    }
+    gctx.putImageData(gimg, 0, 0)
+    const grainPat = ctx.createPattern(grain, 'repeat')
 
     function rot(v, cosY, sinY) {
       const x = v[0] * cosY + v[2] * sinY, z = -v[0] * sinY + v[2] * cosY
@@ -203,9 +251,16 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
       drag = null; canvas.style.cursor = 'grab'
       lastInteract = performance.now()
     }
+    const onWheel = e => {
+      e.preventDefault()
+      const st = stRef.current
+      st.zoom = Math.max(0.85, Math.min(1.6, st.zoom - e.deltaY * 0.0012))
+      lastInteract = performance.now()
+    }
     canvas.addEventListener('pointerdown', onDown)
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
+    canvas.addEventListener('wheel', onWheel, { passive: false })
 
     const hoverAnims = new Map()
 
@@ -215,7 +270,7 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
       if (st.anim < 1) st.anim = Math.min(1, st.anim + 0.045)
       const ease = 1 - Math.pow(1 - st.anim, 3)
       if (!reducedMotion && !drag && !st.hoverId && performance.now() - lastInteract > 900) {
-        st.yaw += 0.00075
+        st.yaw += 0.0018
       }
       const cosY = Math.cos(st.yaw), sinY = Math.sin(st.yaw)
       cosT = Math.cos(st.pitch); sinT = Math.sin(st.pitch)
@@ -223,21 +278,30 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
 
       ctx.clearRect(0, 0, W, H)
 
+      if (discMix > 0) discMix = Math.max(0, discMix - 0.012)
+
       // Globe disc
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI)
       ctx.fillStyle = '#ebebeb'; ctx.fill()
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI)
-      ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.stroke()
-
-      // Fibonacci dots
-      const dotR = isMobileGlobe ? 0.95 : 1.15
-      for (const d of dots) {
-        const r = rot(d, cosY, sinY)
-        if (r[2] <= 0) continue
-        const sx = cx + R * r[0], sy = cy - R * r[1]
-        ctx.beginPath(); ctx.arc(sx, sy, dotR, 0, 2 * Math.PI)
-        ctx.fillStyle = `rgba(0,0,0,${0.10 + 0.42 * r[2]})`; ctx.fill()
+      if (discMix > 0.01) {
+        ctx.save()
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.clip()
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, R)
+        grad.addColorStop(0, '#e6e6e6')
+        grad.addColorStop(0.35, '#a8a8a8')
+        grad.addColorStop(0.65, '#4a4a4a')
+        grad.addColorStop(1, '#050505')
+        ctx.globalAlpha = discMix
+        ctx.fillStyle = grad
+        ctx.fillRect(cx - R, cy - R, R * 2, R * 2)
+        ctx.globalAlpha = 0.10 * discMix
+        ctx.globalCompositeOperation = 'overlay'
+        if (grainPat) { ctx.fillStyle = grainPat; ctx.fillRect(cx - R, cy - R, R * 2, R * 2) }
+        ctx.restore()
       }
+
+      // ASCII letter field — sphere texture built from the brand name
+      drawAsciiField(ctx, cx, cy, R, cosY, sinY, cosT, sinT, discMix, 1)
 
       // Coordinate graticule — parallels + meridians every 30°, instrument-plate texture
       const drawArc = (kind, fixed, col, lw) => {
@@ -270,6 +334,7 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
       // Product spikes
       const anyFilter = st.activeCats.length > 0
       const tips = []
+      let hoverTip = null
       for (const sp of spikes) {
         const isActive = !anyFilter || st.activeCats.includes(sp.it.c)
         if (anyFilter && !isActive) continue
@@ -280,8 +345,8 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
         const hNext = hPrev + ((isHover ? 1 : 0) - hPrev) * 0.13
         hoverAnims.set(sp.it.id, hNext)
         const grow = anyFilter ? ease : 1
-        const baseScale = anyFilter ? 0.9 : 0.28
-        const hoverScale = anyFilter ? 1.8 : 1.1
+        const baseScale = anyFilter ? 0.65 : 0.2
+        const hoverScale = anyFilter ? 1.3 : 0.8
         const H = sp.it.h * grow * (baseScale + (hoverScale - baseScale) * hNext)
         const bx = cx + R * r[0], by = cy - R * r[1]
         const tx = cx + R * r[0] * (1 + H), ty = cy - R * r[1] * (1 + H)
@@ -290,14 +355,34 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
         let col, lw, tipR
         if (hNext > 0.5) { col = `rgba(0,0,0,${0.6 + 0.4 * hNext})`; lw = 1.2 + 1.2 * hNext; tipR = 1.8 + 2.2 * hNext }
         else if (anyFilter) { col = `rgba(0,0,0,${0.55 * depth + 0.3})`; lw = 1.2; tipR = 1.8 }
-        else { col = `rgba(0,0,0,${0.28 * depth})`; lw = 1; tipR = 1.4 }
+        else { col = `rgba(0,0,0,${0.4 * depth})`; lw = 1; tipR = 1.4 }
         ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(tx, ty)
         ctx.strokeStyle = col; ctx.lineWidth = lw; ctx.stroke()
         ctx.beginPath(); ctx.arc(tx, ty, tipR, 0, 2 * Math.PI)
         ctx.fillStyle = col; ctx.fill()
         if (hNext > 0.05) {
-          ctx.beginPath(); ctx.arc(tx, ty, 4 + 6 * hNext, 0, 2 * Math.PI)
+          const ringR = 4 + 6 * hNext
+          ctx.beginPath(); ctx.arc(tx, ty, ringR, 0, 2 * Math.PI)
           ctx.strokeStyle = `rgba(0,0,0,${0.6 * hNext})`; ctx.lineWidth = 1.2; ctx.stroke()
+          if (isHover) hoverTip = { tx, ty, diam: ringR * 2, opacity: hNext, img: sp.it.img }
+        }
+      }
+
+      // Mini product photo pinned over the hovered spike — same footprint as its hover ring
+      if (hoverImgRef.current) {
+        const el = hoverImgRef.current
+        if (hoverTip && hoverTip.img) {
+          if (lastHoverSrcRef.current !== hoverTip.img) {
+            el.src = cdnResize(hoverTip.img, 160)
+            lastHoverSrcRef.current = hoverTip.img
+          }
+          el.style.width = hoverTip.diam + 'px'
+          el.style.height = hoverTip.diam + 'px'
+          el.style.left = (hoverTip.tx - hoverTip.diam / 2) + 'px'
+          el.style.top = (hoverTip.ty - hoverTip.diam / 2) + 'px'
+          el.style.opacity = String(hoverTip.opacity)
+        } else {
+          el.style.opacity = '0'
         }
       }
 
@@ -329,10 +414,35 @@ function GlobeCanvas({ items, activeCats, hoverId, onHover, onPick, onFirstInter
       canvas.removeEventListener('pointerdown', onDown)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
+      canvas.removeEventListener('wheel', onWheel)
     }
-  }, [dots, spikes])
+  }, [spikes])
 
-  return <canvas ref={ref} style={{ display: 'block', cursor: 'grab', touchAction: 'none', animation: 'pac-scale-in 700ms cubic-bezier(.22,.61,.36,1)' }} />
+  return (
+    <>
+      <canvas ref={ref} style={{ display: 'block', cursor: 'grab', touchAction: 'none', animation: 'pac-scale-in 300ms cubic-bezier(.22,.61,.36,1)' }} />
+      <img
+        ref={hoverImgRef}
+        alt=""
+        draggable="false"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: 0,
+          height: 0,
+          borderRadius: 0,
+          objectFit: 'cover',
+          background: '#fff',
+          boxShadow: '0 0 0 1.5px rgba(255,255,255,0.9), 0 2px 8px rgba(0,0,0,0.35)',
+          opacity: 0,
+          pointerEvents: 'none',
+          zIndex: 2,
+          transition: 'opacity 100ms ease-out',
+        }}
+      />
+    </>
+  )
 }
 
 function CatTile({ it, isSel, delay, liked, style }) {
@@ -478,7 +588,7 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
 
   if (list.length === 0) {
     return (
-      <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#fff', color: '#0a0a0a', fontFamily: FONT, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 32px', animation: closing ? 'pac-scale-out 240ms ease-in forwards' : 'pac-scale-in 280ms cubic-bezier(.22,.61,.36,1)' }}>
+      <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#fff', color: '#0a0a0a', fontFamily: FONT, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 32px', animation: closing ? 'pac-scale-out 200ms ease-out forwards' : 'pac-scale-in 280ms cubic-bezier(.22,.61,.36,1)' }}>
         <button onClick={onClose} aria-label="Cerrar lookbook" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 60, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, fontFamily: FONT }}>✕</button>
         <div style={{ fontSize: 56, marginBottom: 8 }}>♡</div>
         <div style={{ fontSize: 30, fontWeight: 700, letterSpacing: -0.5, textTransform: 'uppercase' }}>Tu wishlist está vacía</div>
@@ -493,7 +603,7 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
   const blockProps = { blockW, blockH, cells, ordered, n, cols, colStep, rowStep, tileW, tileH, selId: sel?.id, liked }
 
   return (
-    <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#fff', color: '#0a0a0a', fontFamily: FONT, display: 'flex', flexDirection: 'column', animation: closing ? 'pac-scale-out 240ms ease-in forwards' : 'pac-scale-in 280ms cubic-bezier(.22,.61,.36,1)' }}>
+    <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: '#fff', color: '#0a0a0a', fontFamily: FONT, display: 'flex', flexDirection: 'column', animation: closing ? 'pac-scale-out 200ms ease-out forwards' : 'pac-scale-in 280ms cubic-bezier(.22,.61,.36,1)' }}>
       <div ref={vpRef} style={{ flex: 1, position: 'relative', overflow: 'hidden', cursor: 'grab', touchAction: 'none', userSelect: 'none', background: '#f4f4f2' }}>
         <div ref={wrapRef} style={{ position: 'absolute', top: 0, left: 0, display: 'grid', gridTemplateColumns: 'max-content max-content', willChange: 'transform' }}>
           <CatBlock {...blockProps} /><CatBlock {...blockProps} aria />
@@ -683,7 +793,7 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
           {/* Floating top chrome — brand + counts (left), account/wishlist (right) */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, pointerEvents: 'none', padding: '14px 16px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 26, letterSpacing: -0.5, lineHeight: 1, fontFamily: FONT }}>PRET-A-CL<sup style={{ fontSize: 12 }}>©</sup></div>
+              <div style={{ fontWeight: 700, fontSize: 26, letterSpacing: -0.5, lineHeight: 1, fontFamily: BRAND_FONT }}>PRET-A-CL<sup style={{ fontSize: 12 }}>©</sup></div>
               <div style={{ fontSize: 9, letterSpacing: 1.5, color: '#0a0a0a', textTransform: 'uppercase', fontWeight: 600, marginTop: 3, fontVariantNumeric: 'tabular-nums' }}>
                 {String(ITEMS.length).padStart(2, '0')} PIEZAS · {String(brandCount).padStart(2, '0')} SELLOS
               </div>
@@ -774,7 +884,7 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
 
           {/* Header band — brand mark + tagline (left), coordinates + globe index + date (right) */}
           <div className="pac-headerband" style={{ position: 'absolute', top: 32, left: 0, right: 0, height: 64, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', animation: 'pac-fade-up 500ms cubic-bezier(.22,.61,.36,1)' }}>
-            <span className="pac-headerband-brand" style={{ fontFamily: FONT, fontWeight: 700, fontSize: 44, lineHeight: 0.9, letterSpacing: 0.5, transform: 'translateX(50px)' }}>
+            <span className="pac-headerband-brand" style={{ fontFamily: BRAND_FONT, fontWeight: 700, fontSize: 44, lineHeight: 0.9, letterSpacing: 0.5, transform: 'translateX(50px)' }}>
               PRET-A-CL<sup style={{ fontSize: 18 }}>©</sup>
             </span>
             <button onClick={handleAccountClick} className="pac-cta"

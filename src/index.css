@@ -26,7 +26,7 @@ html, body, #root {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  font-family: "Alte Haas Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   background: #ffffff;
   color: #0a0a0a;
   -webkit-font-smoothing: antialiased;
@@ -36,7 +36,7 @@ html, body, #root {
 }
 
 button {
-  font-family: "Alte Haas Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   border-radius: 0;
   -webkit-appearance: none;
   appearance: none;
@@ -93,27 +93,30 @@ button, a {
 }
 
 .pac-tile { transition: transform 200ms ease; }
-.pac-tile:hover .pac-tile-img { transform: scale(1.06); }
 .pac-tile:active { transform: scale(0.985); }
 
 .pac-tile-card { transition: transform 260ms cubic-bezier(.22,.61,.36,1); transform-style: preserve-3d; will-change: transform; }
 
 .pac-catbtn { transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms cubic-bezier(.22,.61,.36,1); }
-.pac-catbtn:hover { border-color: #000 !important; transform: translateX(5px); }
-.pac-catbtn:hover .pac-catbtn-label { font-weight: 700 !important; color: #0a0a0a !important; }
 .pac-catbtn:active { transform: scale(0.97); }
 
 .pac-cta { transition: transform 150ms ease, opacity 150ms ease; }
-.pac-cta:hover { opacity: 0.86; }
 .pac-cta:active { transform: scale(0.96); }
 
 .pac-wishlist { transition: background-color 150ms ease, color 150ms ease, transform 150ms ease; }
-.pac-wishlist:hover { background: #0a0a0a; color: #fff; }
 .pac-wishlist:active { transform: scale(0.96); }
 
 .pac-closebtn { transition: background-color 150ms ease, color 150ms ease, transform 150ms ease; }
-.pac-closebtn:hover { background: #0a0a0a; color: #fff; }
 .pac-closebtn:active { transform: scale(0.9); }
+
+@media (hover: hover) and (pointer: fine) {
+  .pac-tile:hover .pac-tile-img { transform: scale(1.06); }
+  .pac-catbtn:hover { border-color: #000 !important; transform: translateX(5px); }
+  .pac-catbtn:hover .pac-catbtn-label { font-weight: 700 !important; color: #0a0a0a !important; }
+  .pac-cta:hover { opacity: 0.86; }
+  .pac-wishlist:hover { background: #0a0a0a; color: #fff; }
+  .pac-closebtn:hover { background: #0a0a0a; color: #fff; }
+}
 
 .pac-cta:focus-visible,
 .pac-catbtn:focus-visible,
@@ -145,6 +148,7 @@ button, a {
   overflow-y: auto;
 }
 .pac-hero-display {
+  font-family: "Alte Haas Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 72px;
   letter-spacing: -3px;
   line-height: 0.88;

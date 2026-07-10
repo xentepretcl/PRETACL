@@ -4,7 +4,8 @@ export const T = {
   hair: 'rgba(0,0,0,0.14)',
   hairStrong: 'rgba(0,0,0,0.30)',
   paper: '#ffffff',
-  font: '"Alte Haas Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif',
+  font: '"Inter", "Helvetica Neue", Helvetica, Arial, sans-serif',
+  brandFont: '"Alte Haas Grotesk", "Helvetica Neue", Helvetica, Arial, sans-serif',
 }
 
 export const S = {
