@@ -563,7 +563,6 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
   const off = useRef({ x: vw / 2 - tileW / 2, y: vh / 2 - tileH / 2 })
   const vel = useRef({ x: 0, y: 0 })
   const drag = useRef(null), raf = useRef(0)
-  const zoomRef = useRef(1)
 
   const paint = () => {
     const x = ((off.current.x % blockW) + blockW) % blockW - blockW
@@ -579,36 +578,13 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
   useEffect(() => {
     paint()
     const el = vpRef.current; if (!el) return
-    el.style.transform = `scale(${zoomRef.current})`
-    let pinch = null
-    const pointers = new Map()
     const onDown = e => {
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
-      try { el.setPointerCapture(e.pointerId) } catch (_) {}
-
-      if (pointers.size === 2) {
-        drag.current = null
-        const [a, b] = [...pointers.values()]
-        pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom: zoomRef.current }
-        return
-      }
-      if (pointers.size > 2) return
-
       drag.current = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: Date.now() }
       vel.current = { x: 0, y: 0 }; cancelAnimationFrame(raf.current)
       el.style.cursor = 'grabbing'
+      try { el.setPointerCapture(e.pointerId) } catch (_) {}
     }
     const onMove = e => {
-      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
-
-      if (pinch && pointers.size >= 2) {
-        const [a, b] = [...pointers.values()]
-        const dist = Math.hypot(a.x - b.x, a.y - b.y)
-        zoomRef.current = Math.max(0.7, Math.min(2.2, pinch.zoom * (dist / pinch.dist)))
-        el.style.transform = `scale(${zoomRef.current})`
-        return
-      }
-
       if (!drag.current) return
       const dx = e.clientX - drag.current.x, dy = e.clientY - drag.current.y
       drag.current.x = e.clientX; drag.current.y = e.clientY
@@ -616,11 +592,6 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
       vel.current = { x: dx, y: dy }; paint()
     }
     const onUp = e => {
-      pointers.delete(e.pointerId)
-      if (pinch) {
-        if (pointers.size < 2) pinch = null
-        return
-      }
       if (!drag.current) return
       const moved = Math.hypot(e.clientX - drag.current.sx, e.clientY - drag.current.sy)
       if (moved < 6 && Date.now() - drag.current.t < 400) {

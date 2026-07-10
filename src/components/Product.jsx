@@ -55,27 +55,22 @@ function MobileProduct({ p, b, photos, soldOut, pid, isLiked, toggle, logoFailed
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px 22px' }}>
-        <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1.5, color: T.ink2, textTransform: 'uppercase' }}>MARCA</div>
-
         {b.logo && !logoFailed ? (
-          <div style={{ display: 'flex', alignItems: 'center', height: 40, marginTop: 6, padding: b.logoDark ? '8px 14px' : 0, background: b.logoDark ? T.ink : 'transparent' }}>
+          <div style={{ display: 'flex', alignItems: 'center', height: 40, padding: b.logoDark ? '8px 14px' : 0, background: b.logoDark ? T.ink : 'transparent' }}>
             <img src={b.logo} alt={b.name} onError={() => setLogoFailed(true)} style={{ maxHeight: '100%', maxWidth: 160, objectFit: 'contain' }} />
           </div>
         ) : (
-          <div style={{ fontSize: 22, letterSpacing: -0.4, fontWeight: 700, textTransform: 'uppercase', marginTop: 4 }}>{b.name}</div>
+          <div style={{ fontSize: 22, letterSpacing: -0.4, fontWeight: 700, textTransform: 'uppercase' }}>{b.name}</div>
         )}
 
-        <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: 1, color: T.ink2, textTransform: 'uppercase', marginTop: 4 }}>{b.meta}</div>
-        <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.35, letterSpacing: 0.2, textTransform: 'uppercase' }}>{b.vision}</div>
-        <div style={{ marginTop: 8, fontSize: 11, fontWeight: 500, lineHeight: 1.55, color: T.ink2, letterSpacing: 0.3 }}>{b.history}</div>
-
-        <a href={b.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 10, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', textDecoration: 'underline', textUnderlineOffset: 4, color: 'inherit' }}>
+        <a href={b.url} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: 8, fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', textDecoration: 'underline', textUnderlineOffset: 4, color: 'inherit' }}>
           VER PERFIL DE LA MARCA →
         </a>
 
         <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${T.hair}` }}>
-          <div style={{ fontSize: 24, letterSpacing: -0.4, lineHeight: 1.05, textTransform: 'uppercase' }}>{p.name}</div>
-          <div style={{ fontSize: 17, marginTop: 8, letterSpacing: 0.3, color: soldOut ? T.ink2 : T.ink }}>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, color: T.ink2, textTransform: 'uppercase' }}>{b.name}</div>
+          <div style={{ fontSize: 30, marginTop: 4, letterSpacing: -0.6, lineHeight: 1.05, textTransform: 'uppercase' }}>{p.name}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, marginTop: 10, letterSpacing: 0.3, color: soldOut ? T.ink2 : T.ink }}>
             {soldOut ? 'AGOTADO' : `${p.price} CLP`}
           </div>
         </div>

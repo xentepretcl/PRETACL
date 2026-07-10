@@ -179,40 +179,16 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
     const el = vpRef.current
     if (!el) return
 
-    let pinch = null
-    let zoom = 1
-    const pointers = new Map()
-
     const onDown = (e) => {
       e.stopPropagation()
-      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
-      try { el.setPointerCapture(e.pointerId) } catch (_) {}
-
-      if (pointers.size === 2) {
-        drag.current = null
-        const [a, b] = [...pointers.values()]
-        pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom }
-        return
-      }
-      if (pointers.size > 2) return
-
       drag.current = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: Date.now() }
       vel.current = { x: 0, y: 0 }
       cancelAnimationFrame(raf.current)
       el.style.cursor = 'grabbing'
+      try { el.setPointerCapture(e.pointerId) } catch (_) {}
     }
 
     const onMove = (e) => {
-      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
-
-      if (pinch && pointers.size >= 2) {
-        const [a, b] = [...pointers.values()]
-        const dist = Math.hypot(a.x - b.x, a.y - b.y)
-        zoom = Math.max(0.7, Math.min(2.2, pinch.zoom * (dist / pinch.dist)))
-        el.style.transform = `scale(${zoom})`
-        return
-      }
-
       if (!drag.current) return
       const dx = e.clientX - drag.current.x
       const dy = e.clientY - drag.current.y
@@ -226,11 +202,6 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
     }
 
     const onUp = (e) => {
-      pointers.delete(e.pointerId)
-      if (pinch) {
-        if (pointers.size < 2) pinch = null
-        return
-      }
       if (!drag.current) return
       const moved = Math.hypot(
         (e.clientX ?? drag.current.x) - drag.current.sx,
