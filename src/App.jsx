@@ -81,7 +81,7 @@ export default function App() {
           <CloseBtn onClick={closeView} />
           {view === 'wishlist' && firebaseEnabled && user && (
             <button
-              onClick={signOutUser}
+              onClick={async () => { await signOutUser(); closeView() }}
               className="pac-closebtn"
               style={{
                 position: 'absolute',

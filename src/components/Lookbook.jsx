@@ -1,9 +1,10 @@
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useCallback } from 'react'
 import { PRODUCTS, BRANDS } from '../data'
 import { T } from '../tokens'
 import { cdnResize } from '../imgUtil'
 import { useTilt } from '../useTilt'
 import { useWishlist } from '../WishlistContext'
+import { useAuth } from '../AuthContext'
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768)
@@ -138,6 +139,7 @@ function Tile({ p, pid, style, liked, onOpen, onToggleHeart }) {
 function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, gap = 14, onTile, list: listProp }) {
   const list = listProp || PRODUCTS
   const { liked, toggle } = useWishlist()
+  const { user, signInWithGoogle } = useAuth()
   const colStep = tileW + gap
   const rowStep = tileH + gap
   const totalRows = Math.max(rows, 1)
@@ -148,6 +150,17 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
   onTileRef.current = onTile
   const toggleRef = useRef(toggle)
   toggleRef.current = toggle
+
+  const [loginHint, setLoginHint] = useState(false)
+  const loginHintTimer = useRef(null)
+  const requireAuth = useCallback((fn) => {
+    if (user) { fn(); return }
+    setLoginHint(true)
+    clearTimeout(loginHintTimer.current)
+    loginHintTimer.current = setTimeout(() => setLoginHint(false), 3500)
+  }, [user])
+  const requireAuthRef = useRef(requireAuth)
+  requireAuthRef.current = requireAuth
 
   const originRef = useRef({ col: 0, row: 0 })
   const [origin, setOrigin] = useState(originRef.current)
@@ -211,7 +224,7 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
         const hit = document.elementFromPoint(e.clientX, e.clientY)
         const heart = hit && hit.closest && hit.closest('[data-heart]')
         if (heart) {
-          toggleRef.current(+heart.dataset.heart)
+          requireAuthRef.current(() => toggleRef.current(+heart.dataset.heart))
         } else {
           const tile = hit && hit.closest && hit.closest('[data-idx]')
           if (tile && onTileRef.current) onTileRef.current(PRODUCTS[+tile.dataset.idx])
@@ -305,6 +318,13 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
       >
         {tiles}
       </div>
+
+      {loginHint && (
+        <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#0a0a0a', color: '#fff', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: T.font, animation: 'pac-fade-up 200ms ease-out' }}>
+          <span style={{ fontSize: 12, letterSpacing: 0.5 }}>Inicia sesión para guardar prendas</span>
+          <button onClick={signInWithGoogle} style={{ all: 'unset', cursor: 'pointer', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', textDecoration: 'underline', textUnderlineOffset: 3 }}>INGRESAR →</button>
+        </div>
+      )}
     </div>
   )
 }
@@ -313,11 +333,23 @@ function DragLookbook({ vw, vh, tileW = 230, tileH = 320, cols = 7, rows = 4, ga
 // tiling the same handful of items into an infinite drag-wallpaper would look broken.
 function StaticGrid({ items, onTile }) {
   const { liked, toggle } = useWishlist()
+  const { user, signInWithGoogle } = useAuth()
   const mobile = useIsMobile()
   const tileW = mobile ? 185 : 230
   const tileH = mobile ? 248 : 320
   const gap = mobile ? 8 : 26
+
+  const [loginHint, setLoginHint] = useState(false)
+  const loginHintTimer = useRef(null)
+  const requireAuth = useCallback((fn) => {
+    if (user) { fn(); return }
+    setLoginHint(true)
+    clearTimeout(loginHintTimer.current)
+    loginHintTimer.current = setTimeout(() => setLoginHint(false), 3500)
+  }, [user])
+
   return (
+    <div style={{ position: 'relative', height: '100%' }}>
     <div style={{
       height: '100%',
       overflowY: 'auto',
@@ -338,11 +370,19 @@ function StaticGrid({ items, onTile }) {
             pid={pid}
             liked={liked.has(pid)}
             onOpen={() => onTile(p)}
-            onToggleHeart={() => toggle(pid)}
+            onToggleHeart={() => requireAuth(() => toggle(pid))}
             style={{ width: tileW, height: tileH, cursor: 'pointer', animation: 'pac-scale-in 320ms cubic-bezier(.22,.61,.36,1) backwards' }}
           />
         )
       })}
+    </div>
+
+    {loginHint && (
+      <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#0a0a0a', color: '#fff', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: T.font, animation: 'pac-fade-up 200ms ease-out' }}>
+        <span style={{ fontSize: 12, letterSpacing: 0.5 }}>Inicia sesión para guardar prendas</span>
+        <button onClick={signInWithGoogle} style={{ all: 'unset', cursor: 'pointer', fontSize: 11, fontWeight: 700, letterSpacing: 1.5, textTransform: 'uppercase', textDecoration: 'underline', textUnderlineOffset: 3 }}>INGRESAR →</button>
+      </div>
+    )}
     </div>
   )
 }
