@@ -74,8 +74,7 @@ export const BRANDS = {
     history:
       'VSA Worldwide es una marca chilena de streetwear con proyección internacional. Hoodies técnicos, tees gráficas y accesorios con identidad propia: cada prenda combina diseño local con estética global. Drops periódicos y ediciones limitadas.',
     store: 'VSAWORLDWIDE.CL',
-    url: 'https://www.vsaworldwide.cl/ropa',
-    logo: 'https://images.jumpseller.com/store/vsaworldwide/store/logo/logo_vsa_72x.png?1736210404',
+    url: 'https://vsaworldwide.cl/collections/all',
   },
   cmiller: {
     id: 'cmiller',
@@ -399,8 +398,8 @@ const RAW_PRODUCTS = [
   { brand: 'lcs', name: 'LCS.MP4 LONG SLEEVE OLIVE', price: '$28.000', img: 'https://lcstailors.com/cdn/shop/files/mp4-ls-olive-01.jpg?v=1778855409', url: 'https://lcstailors.com/products/mp4-ls-olive' },
 
   // ── VSA WORLDWIDE ─────────────────────────────────────────────────────────
-  { brand: 'vsa', name: 'BABY TEE BLACK', price: '$19.990', img: 'https://cdnx.jumpseller.com/vsaworldwide/image/71699382/resize/480/480?1776017548', url: 'https://www.vsaworldwide.cl/baby-tee-black' },
-  { brand: 'vsa', name: 'ROYALTY DANGER HOODIE', price: '$42.990', img: 'https://cdnx.jumpseller.com/vsaworldwide/image/77804531/thumb/1440/1440?1781477457', url: 'https://www.vsaworldwide.cl/royalty-danger-hoodie' },
+  { brand: 'vsa', name: 'BABY TEE BLACK', price: '$19.990', img: 'https://cdn.shopify.com/s/files/1/0836/8786/6593/files/1440_34.webp?v=1781844789', img2: 'https://cdn.shopify.com/s/files/1/0836/8786/6593/files/1464_1.webp?v=1781844789', url: 'https://vsaworldwide.cl/products/baby-tee-black' },
+  { brand: 'vsa', name: 'ROYALTY DANGER HOODIE', price: '$42.990', img: 'https://cdn.shopify.com/s/files/1/0836/8786/6593/files/1440_6.webp?v=1781839644', img2: 'https://cdn.shopify.com/s/files/1/0836/8786/6593/files/1440_7.webp?v=1781839644', url: 'https://vsaworldwide.cl/products/royalty-danger-hoodie' },
 
   { brand: 'vsa', name: 'VSA TYPE TEE', price: '$24.990', img: 'https://cdn.shopify.com/s/files/1/0836/8786/6593/files/ChatGPTImage20jul2026_11_31_24a.m..png?v=1785611965', url: 'https://vsaworldwide.cl/products/vsa-type-tee' },
   { brand: 'vsa', name: 'VSA ICON REGULAR STRASS', price: '$27.990', img: 'https://cdn.shopify.com/s/files/1/0836/8786/6593/files/1440_35.webp?v=1781844978', img2: 'https://cdn.shopify.com/s/files/1/0836/8786/6593/files/1440_36.webp?v=1781844978', url: 'https://vsaworldwide.cl/products/vsa-icon-regular-strass' },
