@@ -64,7 +64,7 @@ export const BRANDS = {
       'LCS Tailors es una marca de diseño emergente santiaguina con enfoque en sastrería contemporánea y gráfica de nicho. Cada colección mezcla referencias de subcultura con producción local cuidada: telas técnicas, cortes asimétricos y detalles de ringer tee.',
     store: 'LCSTAILORS.COM',
     url: 'https://lcstailors.com/',
-    logo: 'https://lcstailors.com/cdn/shop/t/17/assets/lcs-logo.svg',
+    logo: '/brands/lcs-logo.svg',
   },
   vsa: {
     id: 'vsa',
