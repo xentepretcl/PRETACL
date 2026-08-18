@@ -50,7 +50,7 @@ function classify(name, url) {
   const n = stripAccents(`${name} ${url || ''}`.toLowerCase())
   if (/vestido|dress|entero|jumpsuit|\bmono\b|jumper pliss|maxi puffy|ola dress|sade dress/.test(n)) return 'VESTIDOS'
   if (!/jacket|chaqueta/.test(n) && /falda|pantalon|\bpants\b|skirt|jean|short|bermuda|pollera|legging|bikini|tanga/.test(n)) return 'INFERIOR'
-  if (/gorro|gorra|\bcap\b|beani?e|zapato|shoe|bolso|\bbag\b|\bbelt\b|cinturon|bufanda|tote|case|bandana|joya|baguette|slipmat|loafer|headphone|cartera/.test(n)) return 'ACCESORIOS'
+  if (/gorro|gorra|\bcap\b|beani?e|snapback|trucker|\bhat\b|zapato|shoe|bolso|\bbag\b|\bbelt\b|cinturon|bufanda|tote|case|bandana|joya|baguette|slipmat|loafer|headphone|cartera/.test(n)) return 'ACCESORIOS'
   return 'SUPERIOR'
 }
 
