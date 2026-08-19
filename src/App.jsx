@@ -131,7 +131,7 @@ export default function App() {
         }}>
           <CloseBtn onClick={closeProduct} />
           <Suspense fallback={null}>
-            <Product product={product} />
+            <Product product={product} onHome={closeView} />
           </Suspense>
         </div>
       )}

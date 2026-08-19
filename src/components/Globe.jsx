@@ -718,7 +718,7 @@ function CatLookbook({ cats, startId, items, onClose, closing }) {
         }}>
           <button onClick={closeProduct} aria-label="Cerrar producto" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 80, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, fontFamily: FONT }}>✕</button>
           <Suspense fallback={null}>
-            <Product product={product} />
+            <Product product={product} onHome={onClose} />
           </Suspense>
         </div>
       )}
@@ -1075,7 +1075,7 @@ export default function Globe({ onOpenLookbook, onOpenWishlist, paused }) {
         <div style={{ position: 'absolute', inset: 0, zIndex: 70, background: '#fff', animation: 'pac-fade-up 320ms cubic-bezier(.22,.61,.36,1)' }}>
           <button onClick={() => setSpikeProduct(null)} aria-label="Cerrar producto" className="pac-closebtn" style={{ all: 'unset', cursor: 'pointer', position: 'absolute', top: 16, right: 18, zIndex: 80, width: 40, height: 40, border: '1px solid rgba(0,0,0,0.3)', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, fontFamily: FONT }}>✕</button>
           <Suspense fallback={null}>
-            <Product product={spikeProduct} />
+            <Product product={spikeProduct} onHome={() => setSpikeProduct(null)} />
           </Suspense>
         </div>
       )}

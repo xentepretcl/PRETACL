@@ -15,6 +15,23 @@ function useIsMobile() {
   return mobile
 }
 
+function BrandMark({ onHome }) {
+  if (!onHome) return null
+  return (
+    <button
+      onClick={onHome}
+      aria-label="Ir al inicio"
+      style={{
+        all: 'unset', position: 'absolute', top: 16, left: 18, zIndex: 45,
+        cursor: 'pointer', fontFamily: T.brandFont, fontWeight: 700,
+        fontSize: 20, letterSpacing: -0.3, lineHeight: 1, color: T.ink,
+      }}
+    >
+      PRET-A-CL<sup style={{ fontSize: 9 }}>©</sup>
+    </button>
+  )
+}
+
 function LoginHint({ onLogin, font }) {
   return (
     <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', zIndex: 200, background: '#0a0a0a', color: '#fff', display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', whiteSpace: 'nowrap', fontFamily: font, animation: 'pac-fade-up 200ms ease-out' }}>
@@ -112,7 +129,7 @@ function MobileProduct({ p, b, photos, soldOut, pid, isLiked, toggle, logoFailed
   )
 }
 
-export default function Product({ product }) {
+export default function Product({ product, onHome }) {
   const p = product || PRODUCTS[5]
   const b = BRANDS[p.brand]
   const photos = [p.img, p.img2].filter(Boolean)
@@ -176,6 +193,7 @@ export default function Product({ product }) {
           isLiked={isLiked} toggle={(id) => requireAuth(() => toggle(id))}
           logoFailed={logoFailed} setLogoFailed={setLogoFailed}
         />
+        <BrandMark onHome={onHome} />
         {loginHint && <LoginHint onLogin={signInWithGoogle} font={T.font} />}
       </div>
     )
@@ -190,7 +208,9 @@ export default function Product({ product }) {
       background: T.paper,
       display: 'grid',
       gridTemplateColumns: '1fr 1fr 1fr',
+      position: 'relative',
     }}>
+      <BrandMark onHome={onHome} />
       {/* COL 1 — brand info */}
       <div className="pac-product-col" style={{
         borderRight: `1px solid ${T.hair}`,
