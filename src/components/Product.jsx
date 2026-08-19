@@ -24,10 +24,11 @@ function BrandMark({ onHome }) {
       style={{
         all: 'unset', position: 'absolute', top: 16, left: 18, zIndex: 45,
         cursor: 'pointer', fontFamily: T.brandFont, fontWeight: 700,
-        fontSize: 20, letterSpacing: -0.3, lineHeight: 1, color: T.ink,
+        fontSize: 28, letterSpacing: -0.5, lineHeight: 1, color: T.ink,
+        background: T.paper, padding: '8px 12px',
       }}
     >
-      PRET-A-CL<sup style={{ fontSize: 9 }}>©</sup>
+      PRET-A-CL<sup style={{ fontSize: 13 }}>©</sup>
     </button>
   )
 }
